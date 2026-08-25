@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+/* ============================================================
+   DESIGN TOKENS — Controle Financeiro
+   Paleta "Razão Financeira": papel neutro-frio + verde-pinho
+   profundo, com vermelho-tijolo para despesas (nunca vermelho
+   puro) e âmbar para alerta. Números grandes em serifa editorial
+   (Fraunces), UI em Manrope, dados tabulares em mono (IBM Plex Mono).
+   ============================================================ */
+
+:root {
+  /* Superfícies */
+  --paper: #f5f6f4;
+  --paper-raised: #ffffff;
+  --ink: #12181b;
+  --ink-raised: #1a2226;
+
+  /* Texto */
+  --text-primary: #12181b;
+  --text-secondary: #5a6663;
+  --text-muted: #8a938f;
+
+  /* Marca */
+  --brand: #17594a;
+  --brand-strong: #0e3c31;
+  --brand-soft: #e3ede9;
+
+  /* Semânticas */
+  --income: #2f9e6e;
+  --income-soft: #e3f3ea;
+  --expense: #c4432b;
+  --expense-soft: #f8e6e1;
+  --alert: #c98a2c;
+  --alert-soft: #f6ecd9;
+  --info: #3e5c8a;
+  --info-soft: #e5eaf3;
+
+  /* Bordas / linhas */
+  --border: #e1e4e0;
+  --border-strong: #c7ccc7;
+  --ledger-line: #d3d9d4;
+
+  --radius: 0.75rem;
+}
+
+.dark {
+  --paper: #0f1512;
+  --paper-raised: #161d19;
+  --ink: #f5f6f4;
+  --ink-raised: #ffffff;
+
+  --text-primary: #eef1ee;
+  --text-secondary: #a3ada7;
+  --text-muted: #6f7973;
+
+  --brand: #3fa787;
+  --brand-strong: #6fc7a9;
+  --brand-soft: #17332a;
+
+  --income: #4bbf8c;
+  --income-soft: #163025;
+  --expense: #e2704f;
+  --expense-soft: #3a1f18;
+  --alert: #dba848;
+  --alert-soft: #33270f;
+  --info: #7796c6;
+  --info-soft: #1c2a3e;
+
+  --border: #262f2a;
+  --border-strong: #37423c;
+  --ledger-line: #2a332d;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink: var(--ink);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+
+  --color-income: var(--income);
+  --color-income-soft: var(--income-soft);
+  --color-expense: var(--expense);
+  --color-expense-soft: var(--expense-soft);
+  --color-alert: var(--alert);
+  --color-alert-soft: var(--alert-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ledger-line: var(--ledger-line);
+
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-manrope);
+  --font-data: var(--font-plex-mono);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 6px);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--paper);
+  color: var(--text-primary);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Assinatura visual: linha de razão sob números financeiros grandes */
+.ledger-underline {
+  position: relative;
+  display: inline-block;
+}
+.ledger-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.35em;
+  height: 2px;
+  background: var(--ledger-line);
+}
+
+.tabular-data {
+  font-family: var(--font-data), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Foco visível para acessibilidade */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
