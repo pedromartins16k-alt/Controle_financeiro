@@ -174,7 +174,7 @@ export async function payCreditCardInvoice(
     await supabase.from("transactions").insert({
       user_id: user.id,
       tipo: "despesa",
-      descricao: Pagamento de Fatura - ,
+      descricao: "Pagamento de Fatura - " + nomeCartao,
       valor: valorFatura,
       account_id: contaPagamentoId,
       forma_pagamento: "debito",
