@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, AlertCircle, CheckCircle2, DollarSign } from "lucide-react";
+import { Plus, Pencil, Trash2, AlertCircle, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { deleteCreditCard, payCreditCardInvoice } from "@/lib/supabase/card-actions";
 import { CartaoVisual } from "./cartao-visual";
 import { CardModal } from "./cartao-modal";
@@ -90,7 +90,7 @@ export function CartoesGrid({
                     <strong>{formatCurrency(c.faturaAtual)}</strong>{" "}
                     {c.diasAteVencimento === 0
                       ? "vence hoje!"
-                      : ence em  dia ().}
+                      : "vence em " + c.diasAteVencimento + " dia(s) (" + c.dataVencimentoFormatada + ")."}
                   </li>
                 ))}
               </ul>
@@ -122,7 +122,7 @@ export function CartoesGrid({
               <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
                 <div className="flex items-center gap-2">
                   {card.faturaAtual === 0 ? (
-                    <Badge tone="success">Fatura zerada</Badge>
+                    <Badge tone="neutral">Fatura zerada</Badge>
                   ) : card.diasAteVencimento < 0 ? (
                     <Badge tone="expense">Vencida</Badge>
                   ) : card.diasAteVencimento <= 3 ? (
@@ -198,7 +198,7 @@ export function CartoesGrid({
                 <option value="">Não debitar de conta (apenas registrar)</option>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.nome} (Saldo: {formatCurrency(a.saldoAtual)})
+                    {a.nome}
                   </option>
                 ))}
               </select>

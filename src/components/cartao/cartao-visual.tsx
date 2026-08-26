@@ -12,7 +12,7 @@ export function CartaoVisual({ card }: { card: CreditCardRow }) {
   return (
     <div
       style={{
-        background: linear-gradient(135deg,  0%, #0d1217 100%),
+        background: `linear-gradient(135deg, ${card.cor} 0%, #0d1217 100%)`,
       }}
       className={cn(
         "relative flex flex-col justify-between overflow-hidden rounded-2xl p-6 text-white shadow-xl transition-all duration-300 hover:scale-[1.02]",
@@ -71,7 +71,7 @@ export function CartaoVisual({ card }: { card: CreditCardRow }) {
               "h-full rounded-full transition-all duration-500",
               pctUsado > 85 ? "bg-rose-500" : pctUsado > 60 ? "bg-amber-400" : "bg-emerald-400"
             )}
-            style={{ width: ${pctUsado}% }}
+            style={{ width: `${pctUsado}%` }}
           />
         </div>
 
