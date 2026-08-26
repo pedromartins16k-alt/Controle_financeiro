@@ -69,24 +69,45 @@ export async function createTransaction(
   if (tipo === "transferencia" && accountId === contaDestinoId) {
     return { error: "A conta de origem e destino não podem ser a mesma." };
   }
+  if (tipo === "despesa" && formaPagamento === "credito" && !cartaoId) {
+    return { error: "Selecione o cartão de crédito para a compra." };
+  }
 
-  const { error } = await supabase.from("transactions").insert({
+  const accountValue = formaPagamento === "credito" ? null : accountId;
+  const cartaoValue = tipo === "despesa" && formaPagamento === "credito" ? cartaoId : null;
+
+  const basePayload: Record<string, any> = {
     user_id: user.id,
     tipo,
     descricao,
     valor,
     categoria_id: tipo === "transferencia" ? null : categoriaId,
-    account_id: formaPagamento === "credito" ? null : accountId,
     conta_destino_id: tipo === "transferencia" ? contaDestinoId : null,
-    cartao_id: tipo === "despesa" && formaPagamento === "credito" ? cartaoId : null,
+    cartao_id: cartaoValue,
     forma_pagamento: formaPagamento,
     data,
     observacao,
     status: "efetivada",
+  };
+
+  // Tenta com conta_id primeiro (compatível com o schema Postgres padrão)
+  let { error } = await supabase.from("transactions").insert({
+    ...basePayload,
+    conta_id: accountValue,
   });
 
+  // Fallback caso a coluna na tabela se chame account_id
+  if (error && error.message?.toLowerCase().includes("conta_id")) {
+    const fallback = await supabase.from("transactions").insert({
+      ...basePayload,
+      account_id: accountValue,
+    });
+    error = fallback.error;
+  }
+
   if (error) {
-    return { error: "Não foi possível salvar a transação. Tente novamente." };
+    console.error("Erro ao salvar transação:", error);
+    return { error: error.message || "Não foi possível salvar a transação." };
   }
 
   revalidatePath("/");
