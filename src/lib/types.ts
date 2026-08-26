@@ -1,4 +1,4 @@
-export interface DashboardSummary {
+﻿export interface DashboardSummary {
   saldoAtual: number;
   saldoVariacaoPct: number;
   receitasMes: number;
@@ -56,3 +56,30 @@ export interface AccountRow {
   ativa: boolean;
 }
 
+export interface CreditCardRow {
+  id: string;
+  nome: string;
+  banco: string | null;
+  limite: number;
+  limiteDisponivel: number;
+  diaFechamento: number;
+  diaVencimento: number;
+  cor: string;
+  ultimosDigitos: string | null;
+  ativo: boolean;
+  faturaAtual: number;
+  statusFatura: "aberta" | "fechada" | "paga" | "atrasada";
+  dataFechamentoFormatada: string;
+  dataVencimentoFormatada: string;
+  diasAteVencimento: number;
+}
+
+export interface InvoiceRow {
+  id: string;
+  cartaoId: string;
+  mesReferencia: string;
+  valorTotal: number;
+  status: "aberta" | "fechada" | "paga" | "atrasada";
+  dataFechamento: string;
+  dataVencimento: string;
+}

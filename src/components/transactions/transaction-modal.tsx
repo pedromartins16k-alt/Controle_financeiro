@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 /* eslint-disable react-hooks/set-state-in-effect --
-   Padrões legítimos aqui: (1) buscar categorias/contas do Supabase quando o
+   Padrões legítimos aqui: (1) buscar categorias/contas/cartões do Supabase quando o
    modal abre, e (2) resetar o formulário/fechar o modal quando a Server
    Action retorna sucesso — ambos sincronizam com sistemas externos. */
 
@@ -29,6 +29,10 @@ interface AccountOption {
   id: string;
   nome: string;
 }
+interface CardOption {
+  id: string;
+  nome: string;
+}
 
 const TIPO_OPTIONS: { value: Tipo; label: string; tone: string }[] = [
   { value: "despesa", label: "Despesa", tone: "data-[active=true]:bg-expense" },
@@ -38,8 +42,8 @@ const TIPO_OPTIONS: { value: Tipo; label: string; tone: string }[] = [
 
 const FORMAS_PAGAMENTO = [
   { value: "pix", label: "Pix" },
-  { value: "debito", label: "Débito" },
   { value: "credito", label: "Crédito" },
+  { value: "debito", label: "Débito" },
   { value: "dinheiro", label: "Dinheiro" },
   { value: "boleto", label: "Boleto" },
   { value: "transferencia", label: "Transferência" },
@@ -55,8 +59,10 @@ export function TransactionModal() {
   );
 
   const [tipo, setTipo] = React.useState<Tipo>("despesa");
+  const [formaPagamento, setFormaPagamento] = React.useState<string>("pix");
   const [categories, setCategories] = React.useState<CategoryOption[]>([]);
   const [accounts, setAccounts] = React.useState<AccountOption[]>([]);
+  const [cards, setCards] = React.useState<CardOption[]>([]);
   const [loadingOptions, setLoadingOptions] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
 
@@ -67,13 +73,15 @@ export function TransactionModal() {
 
     async function loadOptions() {
       const supabase = createClient();
-      const [{ data: cats }, { data: accs }] = await Promise.all([
+      const [{ data: cats }, { data: accs }, { data: crds }] = await Promise.all([
         supabase.from("categories").select("id, nome, tipo").order("nome"),
         supabase.from("accounts").select("id, nome").eq("ativa", true).order("nome"),
+        supabase.from("credit_cards").select("id, nome").eq("ativo", true).order("nome"),
       ]);
       if (!cancelled) {
         setCategories(cats ?? []);
         setAccounts(accs ?? []);
+        setCards(crds ?? []);
         setLoadingOptions(false);
       }
     }
@@ -87,6 +95,7 @@ export function TransactionModal() {
     if (state.success) {
       formRef.current?.reset();
       setTipo("despesa");
+      setFormaPagamento("pix");
       close();
       router.refresh();
     }
@@ -147,7 +156,7 @@ export function TransactionModal() {
           </div>
           <input type="hidden" name="tipo" value={tipo} />
 
-          {/* Valor + descrição — fluxo rápido (seção 27) */}
+          {/* Valor + data */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="valor" className="mb-1.5 block text-sm font-medium text-text-primary">
@@ -220,67 +229,111 @@ export function TransactionModal() {
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="account_id" className="mb-1.5 block text-sm font-medium text-text-primary">
-                {tipo === "transferencia" ? "Conta de origem" : "Conta"}
-              </label>
-              {accounts.length === 0 ? (
-                <p className="rounded-md border border-dashed border-border-strong px-3 py-2 text-xs text-text-muted">
-                  Nenhuma conta cadastrada ainda.
-                </p>
-              ) : (
-                <select
-                  id="account_id"
-                  name="account_id"
-                  required={tipo === "transferencia"}
-                  className="h-10 w-full rounded-md border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
-                >
-                  <option value="">Não informar</option>
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.nome}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
             {tipo === "transferencia" ? (
-              <div>
-                <label htmlFor="conta_destino_id" className="mb-1.5 block text-sm font-medium text-text-primary">
-                  Conta de destino
-                </label>
-                <select
-                  id="conta_destino_id"
-                  name="conta_destino_id"
-                  required
-                  className="h-10 w-full rounded-md border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
-                >
-                  <option value="">Selecione</option>
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <>
+                <div>
+                  <label htmlFor="account_id" className="mb-1.5 block text-sm font-medium text-text-primary">
+                    Conta de origem
+                  </label>
+                  <select
+                    id="account_id"
+                    name="account_id"
+                    required
+                    className="h-10 w-full rounded-md border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
+                  >
+                    <option value="">Selecione</option>
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="conta_destino_id" className="mb-1.5 block text-sm font-medium text-text-primary">
+                    Conta de destino
+                  </label>
+                  <select
+                    id="conta_destino_id"
+                    name="conta_destino_id"
+                    required
+                    className="h-10 w-full rounded-md border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
+                  >
+                    <option value="">Selecione</option>
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
             ) : (
-              <div>
-                <label htmlFor="forma_pagamento" className="mb-1.5 block text-sm font-medium text-text-primary">
-                  Pagamento
-                </label>
-                <select
-                  id="forma_pagamento"
-                  name="forma_pagamento"
-                  className="h-10 w-full rounded-md border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
-                >
-                  {FORMAS_PAGAMENTO.map((f) => (
-                    <option key={f.value} value={f.value}>
-                      {f.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <>
+                <div>
+                  <label htmlFor="forma_pagamento" className="mb-1.5 block text-sm font-medium text-text-primary">
+                    Forma de pagamento
+                  </label>
+                  <select
+                    id="forma_pagamento"
+                    name="forma_pagamento"
+                    value={formaPagamento}
+                    onChange={(e) => setFormaPagamento(e.target.value)}
+                    className="h-10 w-full rounded-md border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
+                  >
+                    {FORMAS_PAGAMENTO.map((f) => (
+                      <option key={f.value} value={f.value}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {tipo === "despesa" && formaPagamento === "credito" ? (
+                  <div>
+                    <label htmlFor="cartao_id" className="mb-1.5 block text-sm font-medium text-text-primary">
+                      Cartão de crédito
+                    </label>
+                    {cards.length === 0 ? (
+                      <p className="rounded-md border border-dashed border-border-strong px-3 py-2 text-xs text-text-muted">
+                        Nenhum cartão cadastrado.
+                      </p>
+                    ) : (
+                      <select
+                        id="cartao_id"
+                        name="cartao_id"
+                        required
+                        className="h-10 w-full rounded-md border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
+                      >
+                        <option value="">Selecione o cartão</option>
+                        {cards.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.nome}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label htmlFor="account_id" className="mb-1.5 block text-sm font-medium text-text-primary">
+                      Conta bancária
+                    </label>
+                    <select
+                      id="account_id"
+                      name="account_id"
+                      className="h-10 w-full rounded-md border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
+                    >
+                      <option value="">Não informar</option>
+                      {accounts.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -22,7 +22,6 @@ const FORMAS_PAGAMENTO = [
 /** Converte um valor digitado em formato BR ("1.250,50" ou "25,00") para número. */
 function parseValorBR(raw: string): number {
   const cleaned = raw.trim().replace(/[^\d,.-]/g, "");
-  // Se tem vírgula, tratamos vírgula como separador decimal e ponto como milhar.
   const normalized = cleaned.includes(",")
     ? cleaned.replace(/\./g, "").replace(",", ".")
     : cleaned;
@@ -46,6 +45,7 @@ export async function createTransaction(
   const categoriaId = String(formData.get("categoria_id") || "") || null;
   const accountId = String(formData.get("account_id") || "") || null;
   const contaDestinoId = String(formData.get("conta_destino_id") || "") || null;
+  const cartaoId = String(formData.get("cartao_id") || "") || null;
   const formaPagamento = String(formData.get("forma_pagamento") || "") || null;
   const data = String(formData.get("data") || "") || new Date().toISOString().slice(0, 10);
   const observacao = String(formData.get("observacao") || "").trim() || null;
@@ -76,8 +76,9 @@ export async function createTransaction(
     descricao,
     valor,
     categoria_id: tipo === "transferencia" ? null : categoriaId,
-    account_id: accountId,
+    account_id: formaPagamento === "credito" ? null : accountId,
     conta_destino_id: tipo === "transferencia" ? contaDestinoId : null,
+    cartao_id: tipo === "despesa" && formaPagamento === "credito" ? cartaoId : null,
     forma_pagamento: formaPagamento,
     data,
     observacao,
@@ -90,6 +91,8 @@ export async function createTransaction(
 
   revalidatePath("/");
   revalidatePath("/transacoes");
+  revalidatePath("/contas");
+  revalidatePath("/cartoes");
   return { success: true };
 }
 
@@ -110,5 +113,7 @@ export async function deleteTransaction(id: string) {
 
   revalidatePath("/");
   revalidatePath("/transacoes");
+  revalidatePath("/contas");
+  revalidatePath("/cartoes");
   return { success: true };
 }
