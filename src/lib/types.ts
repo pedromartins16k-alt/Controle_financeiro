@@ -43,3 +43,16 @@ export interface MetaRow {
   guardado: number;
   prazo: string;
 }
+
+export interface AccountRow {
+  id: string;
+  nome: string;
+  tipo: "corrente" | "poupanca" | "dinheiro" | "carteira_digital" | "investimento" | "outros";
+  banco: string | null;
+  saldoInicial: number;
+  saldoAtual: number;
+  icone: string;
+  cor: string;
+  ativa: boolean;
+}
+

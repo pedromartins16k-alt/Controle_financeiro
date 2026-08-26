@@ -1,6 +1,4 @@
-
-
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
@@ -9,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, cn } from "@/lib/utils";
 import { deleteAccount } from "@/lib/supabase/account-actions";
-import { AccountModal, ICON_OPTIONS } from "./account-modal";
+import { AccountModal, ICON_OPTIONS } from "./contas-modal";
 import type { AccountRow } from "@/lib/types";
 
 const ICONS: Record<string, (typeof ICON_OPTIONS)[number]["Icon"]> = Object.fromEntries(
@@ -31,7 +29,7 @@ export function AccountsGrid({ data }: { data: AccountRow[] }) {
   const [pendingId, setPendingId] = React.useState<string | null>(null);
 
   async function handleDelete(account: AccountRow) {
-    if (!confirm(`Excluir "${account.nome}"? Essa ação não pode ser desfeita.`)) return;
+    if (!confirm(Excluir ""? Essa ação não pode ser desfeita.)) return;
     setPendingId(account.id);
     const result = await deleteAccount(account.id);
     setPendingId(null);
@@ -83,7 +81,7 @@ export function AccountsGrid({ data }: { data: AccountRow[] }) {
                   <div className="flex items-center gap-3">
                     <span
                       className="flex h-10 w-10 items-center justify-center rounded-full"
-                      style={{ backgroundColor: `${a.cor}1f`, color: a.cor }}
+                      style={{ backgroundColor: ${a.cor}1f, color: a.cor }}
                     >
                       <Icon className="h-5 w-5" strokeWidth={2} />
                     </span>
@@ -91,7 +89,7 @@ export function AccountsGrid({ data }: { data: AccountRow[] }) {
                       <p className="text-sm font-medium text-text-primary">{a.nome}</p>
                       <p className="text-xs text-text-muted">
                         {TIPO_LABELS[a.tipo]}
-                        {a.banco ? ` · ${a.banco}` : ""}
+                        {a.banco ?  ·  : ""}
                       </p>
                     </div>
                   </div>
