@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+﻿import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   DashboardSummary,
   EvolucaoPoint,
@@ -27,11 +27,6 @@ function pctChange(current: number, previous: number): number {
   return ((current - previous) / previous) * 100;
 }
 
-/**
- * Busca todos os dados do dashboard para o usuário logado.
- * Etapa 2: leitura real do Supabase. Todas as tabelas começam vazias
- * para um usuário novo, então cada seção trata o caso de dado zerado.
- */
 export async function getDashboardData(
   supabase: SupabaseClient,
   userId: string
@@ -43,16 +38,20 @@ export async function getDashboardData(
 
   const [
     { data: accounts },
+    { data: cards },
+    { data: categoriesData },
     { data: transacoesMesAtual },
     { data: transacoesMesAnterior },
     { data: transacoesRecentes },
     { data: budgetsRows },
     { data: goalsRows },
   ] = await Promise.all([
-    supabase.from("accounts").select("id, saldo_inicial").eq("user_id", userId).eq("ativa", true),
+    supabase.from("accounts").select("id, nome, saldo_inicial").eq("user_id", userId).eq("ativa", true),
+    supabase.from("credit_cards").select("id, nome").eq("user_id", userId),
+    supabase.from("categories").select("id, nome, cor"),
     supabase
       .from("transactions")
-      .select("tipo, valor, categoria_id, categories(nome, cor)")
+      .select("tipo, valor, categoria_id")
       .eq("user_id", userId)
       .gte("data", toISODate(mesAtualInicio))
       .lt("data", toISODate(mesAtualFim))
@@ -66,14 +65,14 @@ export async function getDashboardData(
       .eq("status", "efetivada"),
     supabase
       .from("transactions")
-      .select("id, descricao, valor, tipo, data, categories(nome), accounts(nome)")
+      .select("id, descricao, valor, tipo, data, categoria_id, conta_id, cartao_id, forma_pagamento")
       .eq("user_id", userId)
       .order("data", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(6),
     supabase
       .from("budgets")
-      .select("valor_limite, categories(nome)")
+      .select("valor_limite, categoria_id")
       .eq("user_id", userId)
       .gte("mes_referencia", toISODate(mesAtualInicio))
       .lt("mes_referencia", toISODate(mesAtualFim)),
@@ -83,6 +82,12 @@ export async function getDashboardData(
       .eq("user_id", userId)
       .eq("concluida", false),
   ]);
+
+  const accountsMap = new Map((accounts ?? []).map((a) => [a.id, a.nome]));
+  const cardsMap = new Map((cards ?? []).map((c) => [c.id, c.nome]));
+  const categoriesMap = new Map(
+    (categoriesData ?? []).map((c) => [c.id, { nome: c.nome, cor: c.cor || "#8A938F" }])
+  );
 
   const saldoContas = (accounts ?? []).reduce(
     (sum, a) => sum + Number(a.saldo_inicial ?? 0),
@@ -107,7 +112,7 @@ export async function getDashboardData(
   (transacoesMesAtual ?? [])
     .filter((t) => t.tipo === "despesa")
     .forEach((t) => {
-      const cat = Array.isArray(t.categories) ? t.categories[0] : t.categories;
+      const cat = t.categoria_id ? categoriesMap.get(t.categoria_id) : null;
       const nome = cat?.nome ?? "Outros";
       const cor = cat?.cor ?? "#8A938F";
       const atual = gastosPorCategoriaMap.get(nome);
@@ -155,21 +160,25 @@ export async function getDashboardData(
     gastosPorCategoria: Array.from(gastosPorCategoriaMap.entries()).map(
       ([categoria, v]) => ({ categoria, valor: v.valor, cor: v.cor })
     ),
-    transacoesRecentes: (transacoesRecentes ?? []).map((t) => {
-      const cat = Array.isArray(t.categories) ? t.categories[0] : t.categories;
-      const conta = Array.isArray(t.accounts) ? t.accounts[0] : t.accounts;
+    transacoesRecentes: (transacoesRecentes ?? []).map((t: any) => {
+      const cat = t.categoria_id ? categoriesMap.get(t.categoria_id) : null;
+      const contaOuCartaoNome =
+        (t.conta_id && accountsMap.get(t.conta_id)) ||
+        (t.cartao_id && cardsMap.get(t.cartao_id)) ||
+        (t.forma_pagamento ? t.forma_pagamento.toUpperCase() : "—");
+
       return {
         id: t.id,
         descricao: t.descricao,
         categoria: cat?.nome ?? "Sem categoria",
-        conta: conta?.nome ?? "—",
+        conta: contaOuCartaoNome,
         data: t.data,
         valor: Number(t.valor),
         tipo: t.tipo as "receita" | "despesa" | "transferencia",
       };
     }),
     orcamentos: (budgetsRows ?? []).map((b) => {
-      const cat = Array.isArray(b.categories) ? b.categories[0] : b.categories;
+      const cat = b.categoria_id ? categoriesMap.get(b.categoria_id) : null;
       const nome = cat?.nome ?? "Sem categoria";
       const gastoCategoria = gastosPorCategoriaMap.get(nome)?.valor ?? 0;
       return { categoria: nome, limite: Number(b.valor_limite), gasto: gastoCategoria };

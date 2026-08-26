@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/layout/app-shell";
 import { TransactionsFilters } from "@/components/transactions/transactions-filters";
@@ -19,16 +19,27 @@ export default async function TransacoesPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("nome")
-    .eq("id", user.id)
-    .single();
+  const [
+    { data: profile },
+    { data: accounts },
+    { data: cards },
+    { data: categories },
+  ] = await Promise.all([
+    supabase.from("profiles").select("nome").eq("id", user.id).single(),
+    supabase.from("accounts").select("id, nome").eq("user_id", user.id),
+    supabase.from("credit_cards").select("id, nome").eq("user_id", user.id),
+    supabase.from("categories").select("id, nome"),
+  ]);
+
   const userName = profile?.nome || user.email?.split("@")[0] || "Usuário";
+
+  const accountsMap = new Map((accounts ?? []).map((a) => [a.id, a.nome]));
+  const cardsMap = new Map((cards ?? []).map((c) => [c.id, c.nome]));
+  const categoriesMap = new Map((categories ?? []).map((c) => [c.id, c.nome]));
 
   let query = supabase
     .from("transactions")
-    .select("id, descricao, valor, tipo, data, categories(nome), accounts(nome)")
+    .select("id, descricao, valor, tipo, data, categoria_id, conta_id, cartao_id, forma_pagamento")
     .eq("user_id", user.id)
     .order("data", { ascending: false })
     .order("created_at", { ascending: false })
@@ -37,16 +48,23 @@ export default async function TransacoesPage({
   if (tipo) query = query.eq("tipo", tipo);
   if (q) query = query.ilike("descricao", `%${q}%`);
 
-  const { data: rows } = await query;
+  const { data: rows, error } = await query;
+  if (error) {
+    console.error("Erro na busca de transacoes:", error);
+  }
 
-  const transacoes: TransactionRow[] = (rows ?? []).map((t) => {
-    const cat = Array.isArray(t.categories) ? t.categories[0] : t.categories;
-    const conta = Array.isArray(t.accounts) ? t.accounts[0] : t.accounts;
+  const transacoes: TransactionRow[] = (rows ?? []).map((t: any) => {
+    const categoriaNome = t.categoria_id ? categoriesMap.get(t.categoria_id) ?? "Outros" : "Sem categoria";
+    const contaOuCartaoNome =
+      (t.conta_id && accountsMap.get(t.conta_id)) ||
+      (t.cartao_id && cardsMap.get(t.cartao_id)) ||
+      (t.forma_pagamento ? t.forma_pagamento.toUpperCase() : "—");
+
     return {
       id: t.id,
       descricao: t.descricao,
-      categoria: cat?.nome ?? "Sem categoria",
-      conta: conta?.nome ?? "—",
+      categoria: categoriaNome,
+      conta: contaOuCartaoNome,
       data: t.data,
       valor: Number(t.valor),
       tipo: t.tipo as TransactionRow["tipo"],
