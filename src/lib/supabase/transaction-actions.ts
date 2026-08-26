@@ -81,27 +81,41 @@ export async function createTransaction(
     tipo,
     descricao,
     valor,
-    categoria_id: tipo === "transferencia" ? null : categoriaId,
-    conta_destino_id: tipo === "transferencia" ? contaDestinoId : null,
-    cartao_id: cartaoValue,
-    forma_pagamento: formaPagamento,
     data,
-    observacao,
     status: "efetivada",
   };
 
+  if (categoriaId && tipo !== "transferencia") {
+    basePayload.categoria_id = categoriaId;
+  }
+  if (formaPagamento) {
+    basePayload.forma_pagamento = formaPagamento;
+  }
+  if (observacao) {
+    basePayload.observacao = observacao;
+  }
+  if (contaDestinoId && tipo === "transferencia") {
+    basePayload.conta_destino_id = contaDestinoId;
+  }
+  if (cartaoValue) {
+    basePayload.cartao_id = cartaoValue;
+  }
+
   // Tenta com conta_id primeiro (compatível com o schema Postgres padrão)
-  let { error } = await supabase.from("transactions").insert({
-    ...basePayload,
-    conta_id: accountValue,
-  });
+  let insertPayload = { ...basePayload };
+  if (accountValue) {
+    insertPayload.conta_id = accountValue;
+  }
+
+  let { error } = await supabase.from("transactions").insert(insertPayload);
 
   // Fallback caso a coluna na tabela se chame account_id
   if (error && error.message?.toLowerCase().includes("conta_id")) {
-    const fallback = await supabase.from("transactions").insert({
-      ...basePayload,
-      account_id: accountValue,
-    });
+    const fallbackPayload = { ...basePayload };
+    if (accountValue) {
+      fallbackPayload.account_id = accountValue;
+    }
+    const fallback = await supabase.from("transactions").insert(fallbackPayload);
     error = fallback.error;
   }
 
