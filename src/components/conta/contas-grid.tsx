@@ -29,7 +29,10 @@ export function AccountsGrid({ data }: { data: AccountRow[] }) {
   const [pendingId, setPendingId] = React.useState<string | null>(null);
 
   async function handleDelete(account: AccountRow) {
-    if (!confirm(Excluir ""? Essa ação não pode ser desfeita.)) return;
+    const confirmado = window.confirm(
+      'Excluir "' + account.nome + '"? Essa ação não pode ser desfeita.'
+    );
+    if (!confirmado) return;
     setPendingId(account.id);
     const result = await deleteAccount(account.id);
     setPendingId(null);
