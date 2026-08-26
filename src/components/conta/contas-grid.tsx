@@ -84,7 +84,7 @@ export function AccountsGrid({ data }: { data: AccountRow[] }) {
                   <div className="flex items-center gap-3">
                     <span
                       className="flex h-10 w-10 items-center justify-center rounded-full"
-                      style={{ backgroundColor: ${a.cor}1f, color: a.cor }}
+                      style={{ backgroundColor: a.cor + "1f", color: a.cor }}
                     >
                       <Icon className="h-5 w-5" strokeWidth={2} />
                     </span>
@@ -92,7 +92,7 @@ export function AccountsGrid({ data }: { data: AccountRow[] }) {
                       <p className="text-sm font-medium text-text-primary">{a.nome}</p>
                       <p className="text-xs text-text-muted">
                         {TIPO_LABELS[a.tipo]}
-                        {a.banco ?  ·  : ""}
+                        {a.banco ? " · " + a.banco : ""}
                       </p>
                     </div>
                   </div>
