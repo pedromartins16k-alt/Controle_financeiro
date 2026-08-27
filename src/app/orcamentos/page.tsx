@@ -79,8 +79,15 @@ export default async function OrcamentosPage() {
     };
   });
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("nome")
+    .eq("id", user.id)
+    .single();
+  const userName = profile?.nome || user.email?.split("@")[0] || "Usuário";
+
   return (
-    <AppShell userEmail={user.email}>
+    <AppShell userName={userName}>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-text-primary">
