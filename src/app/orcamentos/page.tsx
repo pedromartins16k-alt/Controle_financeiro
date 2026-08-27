@@ -1,8 +1,8 @@
-﻿import { redirect } from next/navigation;
-import { createClient } from @/lib/supabase/server;
-import { AppShell } from @/components/layout/app-shell;
-import { BudgetsGrid } from @/components/orcamento/budgets-grid;
-import type { CategoryRow, DetailedBudgetRow } from @/lib/types;
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { AppShell } from "@/components/layout/app-shell";
+import { BudgetsGrid } from "@/components/orcamento/budgets-grid";
+import type { CategoryRow, DetailedBudgetRow } from "@/lib/types";
 
 const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
 const startOfNextMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 1);
@@ -15,7 +15,7 @@ export default async function OrcamentosPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(/login);
+    redirect("/login");
   }
 
   const now = new Date();
@@ -24,27 +24,27 @@ export default async function OrcamentosPage() {
 
   const [{ data: categoriesData }, { data: budgetsData }, { data: transacoesMes }] =
     await Promise.all([
-      supabase.from(categories).select(*).order(nome),
+      supabase.from("categories").select("*").order("nome"),
       supabase
-        .from(budgets)
-        .select(*)
-        .eq(user_id, user.id)
-        .gte(mes_referencia, toISODate(mesAtualInicio))
-        .lt(mes_referencia, toISODate(mesAtualFim)),
+        .from("budgets")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("mes_referencia", toISODate(mesAtualInicio))
+        .lt("mes_referencia", toISODate(mesAtualFim)),
       supabase
-        .from(transactions)
-        .select(categoria_id, valor)
-        .eq(user_id, user.id)
-        .eq(tipo, despesa)
-        .eq(status, efetivada)
-        .gte(data, toISODate(mesAtualInicio))
-        .lt(data, toISODate(mesAtualFim)),
+        .from("transactions")
+        .select("categoria_id, valor")
+        .eq("user_id", user.id)
+        .eq("tipo", "despesa")
+        .eq("status", "efetivada")
+        .gte("data", toISODate(mesAtualInicio))
+        .lt("data", toISODate(mesAtualFim)),
     ]);
 
   const categories: CategoryRow[] = (categoriesData || []).map((c: any) => ({
     id: c.id,
     nome: c.nome,
-    cor: c.cor || #10b981,
+    cor: c.cor || "#10b981",
     icone: c.icone,
     tipo: c.tipo,
   }));
@@ -69,8 +69,8 @@ export default async function OrcamentosPage() {
     return {
       id: b.id,
       categoriaId: b.categoria_id,
-      categoriaNome: cat?.nome || Sem categoria,
-      categoriaCor: cat?.cor || #10b981,
+      categoriaNome: cat?.nome || "Sem categoria",
+      categoriaCor: cat?.cor || "#10b981",
       categoriaIcone: cat?.icone,
       mesReferencia: b.mes_referencia,
       valorLimite,
@@ -81,12 +81,12 @@ export default async function OrcamentosPage() {
 
   return (
     <AppShell userEmail={user.email}>
-      <div className=space-y-6>
+      <div className="space-y-6">
         <div>
-          <h1 className=text-2xl font-bold tracking-tight text-text-primary>
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary">
             Planejamento & Orçamentos
           </h1>
-          <p className=text-sm text-text-secondary>
+          <p className="text-sm text-text-secondary">
             Estabeleça metas de gastos para cada categoria do seu mês e evite surpresas.
           </p>
         </div>

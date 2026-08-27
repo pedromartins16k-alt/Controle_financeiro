@@ -1,8 +1,8 @@
-﻿import { redirect } from next/navigation;
-import { createClient } from @/lib/supabase/server;
-import { AppShell } from @/components/layout/app-shell;
-import { GoalsGrid } from @/components/meta/goals-grid;
-import type { DetailedGoalRow } from @/lib/types;
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { AppShell } from "@/components/layout/app-shell";
+import { GoalsGrid } from "@/components/meta/goals-grid";
+import type { DetailedGoalRow } from "@/lib/types";
 
 export default async function MetasPage() {
   const supabase = await createClient();
@@ -11,15 +11,15 @@ export default async function MetasPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(/login);
+    redirect("/login");
   }
 
   const { data: goalsData } = await supabase
-    .from(goals)
-    .select(*)
-    .eq(user_id, user.id)
-    .order(concluida, { ascending: true })
-    .order(created_at, { ascending: false });
+    .from("goals")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("concluida", { ascending: true })
+    .order("created_at", { ascending: false });
 
   const now = new Date();
 
@@ -34,10 +34,10 @@ export default async function MetasPage() {
 
     if (g.prazo) {
       const prazoDate = new Date(g.prazo);
-      prazoFormatado = new Intl.DateTimeFormat(pt-BR, {
-        day: 2-digit,
-        month: short,
-        year: numeric,
+      prazoFormatado = new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
       }).format(prazoDate);
 
       // Calcula a quantidade de meses até o prazo
@@ -57,7 +57,7 @@ export default async function MetasPage() {
       valorObjetivo,
       valorAtual,
       prazo: prazoFormatado,
-      cor: g.cor || #10b981,
+      cor: g.cor || "#10b981",
       icone: g.icone,
       concluida: g.concluida || percentual >= 100,
       percentual,
@@ -68,12 +68,12 @@ export default async function MetasPage() {
 
   return (
     <AppShell userEmail={user.email}>
-      <div className=space-y-6>
+      <div className="space-y-6">
         <div>
-          <h1 className=text-2xl font-bold tracking-tight text-text-primary>
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary">
             Metas & Objetivos Financeiros
           </h1>
-          <p className=text-sm text-text-secondary>
+          <p className="text-sm text-text-secondary">
             Construa patrimônio, planeje conquistas e acompanhe seu progresso de economia.
           </p>
         </div>
