@@ -1,4 +1,4 @@
-﻿export interface DashboardSummary {
+export interface DashboardSummary {
   saldoAtual: number;
   saldoVariacaoPct: number;
   receitasMes: number;
@@ -31,10 +31,31 @@ export interface TransactionRow {
   tipo: "receita" | "despesa" | "transferencia";
 }
 
+export interface CategoryRow {
+  id: string;
+  nome: string;
+  icone?: string;
+  cor: string;
+  tipo?: "receita" | "despesa" | "ambos";
+  user_id?: string | null;
+}
+
 export interface OrcamentoRow {
   categoria: string;
   limite: number;
   gasto: number;
+}
+
+export interface DetailedBudgetRow {
+  id: string;
+  categoriaId: string;
+  categoriaNome: string;
+  categoriaCor: string;
+  categoriaIcone?: string;
+  mesReferencia: string;
+  valorLimite: number;
+  valorGasto: number;
+  percentualGasto: number;
 }
 
 export interface MetaRow {
@@ -42,6 +63,31 @@ export interface MetaRow {
   objetivo: number;
   guardado: number;
   prazo: string;
+}
+
+export interface DetailedGoalRow {
+  id: string;
+  nome: string;
+  descricao?: string | null;
+  valorObjetivo: number;
+  valorAtual: number;
+  prazo?: string | null;
+  cor: string;
+  icone?: string | null;
+  concluida: boolean;
+  percentual: number;
+  valorRestante: number;
+  sugestaoMensal?: number | null;
+}
+
+export interface NotificationRow {
+  id: string;
+  titulo: string;
+  mensagem: string;
+  tipo: "alerta" | "info" | "sucesso" | "vencimento";
+  lida: boolean;
+  link?: string | null;
+  data: string;
 }
 
 export interface AccountRow {

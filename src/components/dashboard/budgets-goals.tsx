@@ -20,9 +20,9 @@ export function BudgetsPreview({ data }: { data: OrcamentoRow[] }) {
           <p className="text-sm text-text-secondary">
             Nenhum orçamento definido para este mês.
           </p>
-          <button className="text-sm font-medium text-brand hover:underline">
+          <a href="/orcamentos" className="text-sm font-medium text-brand hover:underline">
             + Criar orçamento
-          </button>
+          </a>
         </div>
       )}
 
@@ -72,9 +72,9 @@ export function GoalsPreview({ data }: { data: MetaRow[] }) {
       {data.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-8 text-center">
           <p className="text-sm text-text-secondary">Você ainda não possui metas.</p>
-          <button className="text-sm font-medium text-brand hover:underline">
+          <a href="/metas" className="text-sm font-medium text-brand hover:underline">
             + Criar primeira meta
-          </button>
+          </a>
         </div>
       )}
 
