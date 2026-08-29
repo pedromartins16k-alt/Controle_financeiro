@@ -29,6 +29,11 @@ export interface TransactionRow {
   data: string;
   valor: number;
   tipo: "receita" | "despesa" | "transferencia";
+  is_recorrente?: boolean;
+  intervalo_recorrencia?: "mensal" | "semanal" | "anual" | null;
+  parcela_atual?: number | null;
+  total_parcelas?: number | null;
+  grupo_id?: string | null;
 }
 
 export interface CategoryRow {

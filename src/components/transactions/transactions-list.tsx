@@ -50,9 +50,21 @@ export function TransactionsList({ data }: { data: TransactionRow[] }) {
             className={`group flex items-center justify-between border-l-2 px-4 py-3.5 ${TONE_BORDER[tone]}`}
           >
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-text-primary">{t.descricao}</p>
+              <p className="flex items-center gap-2 truncate text-sm font-medium text-text-primary">
+                {t.descricao}
+                {t.is_recorrente && (
+                  <span className="rounded-md border border-brand/20 bg-brand/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
+                    Recorrente
+                  </span>
+                )}
+                {t.total_parcelas && t.total_parcelas > 1 && (
+                  <span className="rounded-md border border-info/20 bg-info/10 px-1.5 py-0.5 text-[10px] font-semibold text-info">
+                    {t.parcela_atual}/{t.total_parcelas}
+                  </span>
+                )}
+              </p>
               <p className="truncate text-xs text-text-muted">
-                {t.categoria} · {t.conta} · {formatDate(t.data)}
+                {t.categoria} • {t.conta} • {formatDate(t.data)}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-3 pl-3">

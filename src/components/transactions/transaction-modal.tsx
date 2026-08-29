@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 /* eslint-disable react-hooks/set-state-in-effect --
    Padrões legítimos aqui: (1) buscar categorias/contas/cartões do Supabase quando o
    modal abre, e (2) resetar o formulário/fechar o modal quando a Server
@@ -66,6 +66,11 @@ export function TransactionModal() {
   const [loadingOptions, setLoadingOptions] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
 
+  const [repetir, setRepetir] = React.useState(false);
+  const [tipoRepeticao, setTipoRepeticao] = React.useState<"parcelada" | "fixa">("parcelada");
+  const [intervalo, setIntervalo] = React.useState<"mensal" | "semanal" | "anual">("mensal");
+  const [parcelas, setParcelas] = React.useState<number>(2);
+
   React.useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
@@ -96,6 +101,10 @@ export function TransactionModal() {
       formRef.current?.reset();
       setTipo("despesa");
       setFormaPagamento("pix");
+      setRepetir(false);
+      setTipoRepeticao("parcelada");
+      setIntervalo("mensal");
+      setParcelas(2);
       close();
       router.refresh();
     }
@@ -334,6 +343,86 @@ export function TransactionModal() {
                   </div>
                 )}
               </>
+            )}
+          </div>
+
+          <div className="rounded-md border border-border-strong bg-paper-raised/50 p-4">
+            <label className="flex items-center gap-2 cursor-pointer mb-2">
+              <input
+                type="checkbox"
+                name="repetir"
+                value="true"
+                checked={repetir}
+                onChange={(e) => setRepetir(e.target.checked)}
+                className="h-4 w-4 rounded border-border-strong text-brand focus:ring-brand"
+              />
+              <span className="text-sm font-medium text-text-primary">Repetir transação</span>
+            </label>
+
+            {repetir && (
+              <div className="mt-4 space-y-4">
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="tipo_repeticao"
+                      value="parcelada"
+                      checked={tipoRepeticao === "parcelada"}
+                      onChange={() => setTipoRepeticao("parcelada")}
+                      className="h-4 w-4 border-border-strong text-brand focus:ring-brand"
+                    />
+                    <span className="text-sm text-text-primary">Parcelada</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="tipo_repeticao"
+                      value="fixa"
+                      checked={tipoRepeticao === "fixa"}
+                      onChange={() => setTipoRepeticao("fixa")}
+                      className="h-4 w-4 border-border-strong text-brand focus:ring-brand"
+                    />
+                    <span className="text-sm text-text-primary">Fixa / Assinatura</span>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {tipoRepeticao === "parcelada" ? (
+                    <div>
+                      <label htmlFor="parcelas" className="mb-1.5 block text-sm font-medium text-text-primary">
+                        Qtd. Parcelas
+                      </label>
+                      <input
+                        id="parcelas"
+                        name="parcelas"
+                        type="number"
+                        min="2"
+                        max="120"
+                        value={parcelas}
+                        onChange={(e) => setParcelas(Number(e.target.value))}
+                        className="h-10 w-full rounded-md border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <label htmlFor="intervalo" className="mb-1.5 block text-sm font-medium text-text-primary">
+                        Intervalo
+                      </label>
+                      <select
+                        id="intervalo"
+                        name="intervalo"
+                        value={intervalo}
+                        onChange={(e) => setIntervalo(e.target.value as any)}
+                        className="h-10 w-full rounded-md border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
+                      >
+                        <option value="mensal">Mensal</option>
+                        <option value="semanal">Semanal</option>
+                        <option value="anual">Anual</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
