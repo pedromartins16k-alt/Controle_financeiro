@@ -39,13 +39,14 @@ export function Topbar({ userName }: { userName: string }) {
         <div className="hidden md:block">
           <ThemeToggle />
         </div>
-        <button
+        <a
+          href="/notificacoes"
           aria-label="Notificações"
           className="relative flex h-9 w-9 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-paper-raised hover:text-text-primary"
         >
           <Bell className="h-[18px] w-[18px]" strokeWidth={2} />
           <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-expense" />
-        </button>
+        </a>
         <div
           aria-label="Perfil"
           className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft font-display text-sm font-medium text-brand-strong dark:text-brand"
