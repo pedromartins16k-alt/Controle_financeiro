@@ -55,7 +55,7 @@ export async function upsertBudget(
       .eq("id", id)
       .eq("user_id", user.id);
 
-    if (error) return { error: "Erro ao atualizar orçamento." };
+    if (error) return { error: error.message || "Erro ao atualizar orçamento." };
   } else {
     const { error } = await supabase.from("budgets").insert({
       user_id: user.id,
@@ -64,7 +64,7 @@ export async function upsertBudget(
       mes_referencia: mesReferencia,
     });
 
-    if (error) return { error: "Erro ao cadastrar orçamento." };
+    if (error) return { error: error.message || "Erro ao cadastrar orçamento." };
   }
 
   revalidatePath("/");
@@ -123,18 +123,41 @@ export async function createGoal(
     return { error: "Informe um valor objetivo válido maior que zero." };
   }
 
-  const { error } = await supabase.from("goals").insert({
+  const payload: Record<string, any> = {
     user_id: user.id,
     nome,
-    descricao,
     valor_objetivo: valorObjetivo,
     valor_atual: Number.isFinite(valorAtual) ? valorAtual : 0,
-    prazo,
-    cor,
-    icone,
-  });
+  };
 
-  if (error) return { error: "Não foi possível criar a meta. Tente novamente." };
+  if (descricao) payload.descricao = descricao;
+  if (prazo) payload.prazo = prazo;
+  if (cor) payload.cor = cor;
+  if (icone) payload.icone = icone;
+
+  const { error } = await supabase.from("goals").insert(payload);
+
+  if (error) {
+    console.error("Erro ao criar meta:", error);
+    // Se der erro de coluna (ex: cor, icone, descricao não existirem no schema original)
+    if (error.message && (error.message.includes("column") || error.code === "PGRST204" || error.code === "42703")) {
+      const minimalPayload = {
+        user_id: user.id,
+        nome,
+        valor_objetivo: valorObjetivo,
+        valor_atual: Number.isFinite(valorAtual) ? valorAtual : 0,
+        prazo: prazo || null,
+      };
+      const retry = await supabase.from("goals").insert(minimalPayload);
+      if (!retry.error) {
+        revalidatePath("/");
+        revalidatePath("/metas");
+        return { success: true };
+      }
+      return { error: retry.error.message || "Não foi possível criar a meta." };
+    }
+    return { error: error.message || "Não foi possível criar a meta. Tente novamente." };
+  }
 
   revalidatePath("/");
   revalidatePath("/metas");
