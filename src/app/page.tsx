@@ -18,9 +18,13 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("nome")
+    .select("nome, onboarding_concluido")
     .eq("id", user.id)
     .single();
+
+  if (profile && profile.onboarding_concluido === false) {
+    redirect("/onboarding");
+  }
 
   const userName = profile?.nome || user.email?.split("@")[0] || "Usuário";
   const data = await getDashboardData(supabase, user.id);

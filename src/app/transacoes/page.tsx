@@ -1,4 +1,4 @@
-﻿import { redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/layout/app-shell";
 import { TransactionsFilters } from "@/components/transactions/transactions-filters";
@@ -25,12 +25,15 @@ export default async function TransacoesPage({
     { data: cards },
     { data: categories },
   ] = await Promise.all([
-    supabase.from("profiles").select("nome").eq("id", user.id).single(),
+    supabase.from("profiles").select("nome, onboarding_concluido").eq("id", user.id).single(),
     supabase.from("accounts").select("id, nome").eq("user_id", user.id),
     supabase.from("credit_cards").select("id, nome").eq("user_id", user.id),
     supabase.from("categories").select("id, nome"),
   ]);
 
+  if (profile && profile.onboarding_concluido === false) {
+    redirect("/onboarding");
+  }
   const userName = profile?.nome || user.email?.split("@")[0] || "Usuário";
 
   const accountsMap = new Map((accounts ?? []).map((a) => [a.id, a.nome]));
