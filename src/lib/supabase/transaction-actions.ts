@@ -79,7 +79,11 @@ export async function createTransaction(
   const parcelas = Number(formData.get("parcelas") || 1);
 
   if (repetir && tipoRepeticao === "parcelada" && parcelas < 2) {
-    return { error: "Informe um nmero vlido de parcelas." };
+    return { error: "Informe um número válido de parcelas." };
+  }
+  // FIX: cap máximo de parcelas para evitar milhares de entradas acidentais
+  if (repetir && tipoRepeticao === "parcelada" && parcelas > 360) {
+    return { error: "O número máximo de parcelas é 360 (30 anos)." };
   }
 
   const accountValue = formaPagamento === "credito" ? null : accountId;
@@ -89,7 +93,7 @@ export async function createTransaction(
     user_id: user.id,
     tipo,
     descricao,
-    status: "efetivada",
+    // Nota: status será definido por entrada abaixo (efetivada ou agendada)
   };
 
   if (categoriaId && tipo !== "transferencia") {
@@ -110,12 +114,18 @@ export async function createTransaction(
 
   let insertPayloads: any[] = [];
 
+  // Data de hoje (sem hora) para comparar com cada entrada
+  const todayStr = new Date().toISOString().slice(0, 10);
+
   if (repetir) {
     const grupoId = crypto.randomUUID();
-    const iterations = tipoRepeticao === "parcelada" ? parcelas : 12; // 12 meses padro para fixa
-    const installmentValue = tipoRepeticao === "parcelada" ? Number((valor / parcelas).toFixed(2)) : valor;
-    
-    // Ajusta o primeiro ms para criar as datas corretamente (evitar fuso horrio cortando 1 dia)
+    const iterations = tipoRepeticao === "parcelada" ? parcelas : 12; // 12 meses padrão para fixa
+    const installmentValue =
+      tipoRepeticao === "parcelada"
+        ? Number((valor / parcelas).toFixed(2))
+        : valor;
+
+    // Ajusta o fuso horário para não cortar 1 dia
     const baseDate = new Date(`${data}T12:00:00Z`);
 
     for (let i = 0; i < iterations; i++) {
@@ -127,38 +137,53 @@ export async function createTransaction(
         } else if (intervalo === "anual") {
           iterationDate.setFullYear(iterationDate.getFullYear() + i);
         } else if (intervalo === "semanal") {
-          iterationDate.setDate(iterationDate.getDate() + (i * 7));
+          iterationDate.setDate(iterationDate.getDate() + i * 7);
         }
       }
 
+      const entryDateStr = iterationDate.toISOString().slice(0, 10);
+
+      // FIX: entradas com data futura ficam como "agendada";
+      // apenas a primeira (ou passadas/hoje) ficam "efetivada".
+      const entryStatus = entryDateStr <= todayStr ? "efetivada" : "agendada";
+
       insertPayloads.push({
         ...basePayload,
-        data: iterationDate.toISOString().slice(0, 10),
+        status: entryStatus,
+        data: entryDateStr,
         valor: installmentValue,
         is_recorrente: tipoRepeticao === "fixa",
         intervalo_recorrencia: tipoRepeticao === "fixa" ? intervalo : null,
         total_parcelas: tipoRepeticao === "parcelada" ? parcelas : null,
-        parcela_atual: tipoRepeticao === "parcelada" ? (i + 1) : null,
+        parcela_atual: tipoRepeticao === "parcelada" ? i + 1 : null,
         grupo_id: grupoId,
-        descricao: tipoRepeticao === "parcelada" ? `${descricao} (${i + 1}/${parcelas})` : descricao,
+        descricao:
+          tipoRepeticao === "parcelada"
+            ? `${descricao} (${i + 1}/${parcelas})`
+            : descricao,
       });
     }
   } else {
     insertPayloads.push({
       ...basePayload,
+      status: "efetivada",
       data,
       valor,
     });
   }
 
-  // Tenta com conta_id primeiro (compatvel com o schema Postgres padro)
-  let payloadsWithAccount = insertPayloads.map(p => accountValue ? { ...p, conta_id: accountValue } : p);
-  
+  // Tenta com conta_id primeiro (compatível com o schema Postgres padrão)
+  let payloadsWithAccount = insertPayloads.map((p) =>
+    accountValue ? { ...p, conta_id: accountValue } : p
+  );
+
   let { error } = await supabase.from("transactions").insert(payloadsWithAccount);
 
   // Fallback caso a coluna na tabela se chame account_id
   if (error && error.message?.toLowerCase().includes("conta_id")) {
-    payloadsWithAccount = insertPayloads.map(p => accountValue ? { ...p, account_id: accountValue } : p);
+    payloadsWithAccount = insertPayloads.map((p) =>
+      accountValue ? { ...p, account_id: accountValue } : p
+    );
     const fallback = await supabase.from("transactions").insert(payloadsWithAccount);
     error = fallback.error;
   }
