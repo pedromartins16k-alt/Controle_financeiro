@@ -99,7 +99,74 @@ export async function askFinancialAI(
     return `${g.nome}: ${formatCurrency(Number(g.valor_atual || 0))} acumulado de ${formatCurrency(Number(g.valor_alvo || 0))}`;
   }).join("; ");
 
-  // 1. Chamar Google Gemini se houver chave configurada
+  // 1. Chamar Groq se houver chave configurada (Super Rápido)
+  const groqApiKey = process.env.GROQ_API_KEY;
+  if (groqApiKey) {
+    try {
+      const systemPrompt = `Você é o "Assistente Financeiro IA" pessoal de ${userName}.
+Seu objetivo é ser direto, simpático, motivador e responder SEMPRE com precisão à dúvida específica do usuário.
+Responda em Português do Brasil com formatação rica em Markdown (listas, negrito e emojis).
+
+DADOS FINANCEIROS EM TEMPO REAL DE ${userName.toUpperCase()}:
+- Receitas efetivadas no mês: ${formatCurrency(totalReceitas)}
+- Receitas agendadas (a receber): ${formatCurrency(receitasAgendadas)}
+- Despesas já pagas: ${formatCurrency(totalDespesas)}
+- Despesas agendadas (a pagar no mês): ${formatCurrency(despesasAgendadas)}
+- Saldo atual líquido em caixa: ${formatCurrency(saldoAtual)}
+- Previsão de Saldo até o fim do mês: ${formatCurrency(saldoPrevistoFimMes)}
+- Gastos por Categoria: ${topCategorias || "Nenhum gasto registrado"}
+- Orçamentos/Tetos: ${orcamentosInfo || "Nenhum teto configurado"}
+- Metas Financeiras: ${metasInfo || "Nenhuma meta cadastrada"}
+- Cartões de Crédito: ${(cards || []).map(c => `${c.nome} (limite ${formatCurrency(Number(c.limite || 0))})`).join(", ") || "Nenhum"}
+
+REGRAS:
+1. Responda diretamente ao que o usuário perguntar. Se ele perguntar o nome, diga que é o Assistente Financeiro IA. Se perguntar o saldo previsto, informe ${formatCurrency(saldoPrevistoFimMes)} e explique o cálculo.
+2. Seja conciso e use formatação limpa.`;
+
+      const messagesPayload = [
+        { role: "system", content: systemPrompt },
+        ...history.slice(-6).map((h) => ({
+          role: h.role === "assistant" ? "assistant" : "user",
+          content: h.content,
+        })),
+        { role: "user", content: userPrompt },
+      ];
+
+      const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${groqApiKey}`,
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-oss-120b",
+          messages: messagesPayload,
+          temperature: 0.4,
+          max_tokens: 700,
+        }),
+      });
+
+      if (groqRes.ok) {
+        const groqJson = await groqRes.json();
+        const text = groqJson.choices?.[0]?.message?.content;
+        if (text) {
+          return {
+            reply: text,
+            suggestions: [
+              "Qual o saldo previsto até o fim do mês?",
+              "Como posso economizar este mês?",
+              "Quais foram meus maiores gastos?",
+              "Como estão minhas metas financeiras?",
+            ],
+          };
+        }
+      }
+    } catch (err) {
+      console.warn("Groq API fallback:", err);
+    }
+  }
+
+  // 2. Chamar Google Gemini se houver chave configurada
   const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (geminiApiKey) {
     try {
