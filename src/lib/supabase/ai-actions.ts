@@ -42,11 +42,11 @@ export async function askFinancialAI(
   ] = await Promise.all([
     supabase.from("profiles").select("nome").eq("id", user.id).single(),
     supabase.from("accounts").select("nome, saldo_inicial, tipo").eq("user_id", user.id).eq("ativa", true),
-    supabase.from("credit_cards").select("nome, limite, dia_vencimento, dia_fechamento").eq("user_id", user.id).eq("ativo", true),
+    supabase.from("credit_cards").select("id, nome, limite, dia_vencimento, dia_fechamento").eq("user_id", user.id).eq("ativo", true),
     supabase.from("categories").select("id, nome, tipo"),
     supabase.from("budgets").select("valor_limite, categoria_id").eq("user_id", user.id),
     supabase.from("financial_goals").select("nome, valor_alvo, valor_atual, prazo").eq("user_id", user.id),
-    supabase.from("transactions").select("descricao, valor, tipo, data, categoria_id, cartao_id, status").eq("user_id", user.id).gte("data", firstDay).lte("data", lastDay),
+    supabase.from("transactions").select("descricao, valor, tipo, data, categoria_id, cartao_id, status, forma_pagamento").eq("user_id", user.id).gte("data", firstDay).lte("data", lastDay),
   ]);
 
   const userName = profile?.nome || user.email?.split("@")[0] || "Usuário";
@@ -56,12 +56,22 @@ export async function askFinancialAI(
   let totalReceitas = 0;
   let totalDespesas = 0;
   let despesasAgendadas = 0;
+  let receitasAgendadas = 0;
   const gastosPorCategoria: Record<string, number> = {};
+  const transacoesDescricao: Array<{ descricao: string; valor: number; tipo: string; data: string }> = [];
 
   (transactions || []).forEach((t) => {
     const val = Number(t.valor);
+    transacoesDescricao.push({
+      descricao: t.descricao,
+      valor: val,
+      tipo: t.tipo,
+      data: t.data,
+    });
+
     if (t.status === "agendada") {
       if (t.tipo === "despesa") despesasAgendadas += val;
+      if (t.tipo === "receita") receitasAgendadas += val;
     } else {
       if (t.tipo === "receita") totalReceitas += val;
       if (t.tipo === "despesa") {
@@ -72,11 +82,11 @@ export async function askFinancialAI(
     }
   });
 
-  const saldoLiquido = totalReceitas - totalDespesas;
-  const topCategorias = Object.entries(gastosPorCategoria)
-    .sort((a, b) => b[1] - a[1])
-    .map(([cat, val]) => `${cat}: ${formatCurrency(val)}`)
-    .join(", ");
+  const saldoAtual = totalReceitas - totalDespesas;
+  const saldoPrevistoFimMes = saldoAtual + receitasAgendadas - despesasAgendadas;
+
+  const topCategoriasList = Object.entries(gastosPorCategoria).sort((a, b) => b[1] - a[1]);
+  const topCategorias = topCategoriasList.map(([cat, val]) => `${cat}: ${formatCurrency(val)}`).join(", ");
 
   const orcamentosInfo = (budgets || []).map((b) => {
     const cat = catMap.get(b.categoria_id) || "Categoria";
@@ -86,51 +96,33 @@ export async function askFinancialAI(
   }).join("; ");
 
   const metasInfo = (goals || []).map((g) => {
-    return `${g.nome}: ${formatCurrency(Number(g.valor_atual || 0))} de ${formatCurrency(Number(g.valor_alvo || 0))}`;
+    return `${g.nome}: ${formatCurrency(Number(g.valor_atual || 0))} acumulado de ${formatCurrency(Number(g.valor_alvo || 0))}`;
   }).join("; ");
 
-  const contextoFinanceiro = `
-Dados financeiros de ${userName} no mês atual:
-- Receitas deste mês: ${formatCurrency(totalReceitas)}
-- Despesas pagas deste mês: ${formatCurrency(totalDespesas)}
-- Despesas agendadas para o resto do mês: ${formatCurrency(despesasAgendadas)}
-- Saldo líquido atual: ${formatCurrency(saldoLiquido)}
-- Principais gastos por categoria: ${topCategorias || "Nenhum gasto registrado ainda"}
-- Orçamentos definidos: ${orcamentosInfo || "Nenhum orçamento configurado"}
-- Metas de economia: ${metasInfo || "Nenhuma meta cadastrada"}
-- Cartões cadastrados: ${(cards || []).map(c => `${c.nome} (limite ${formatCurrency(Number(c.limite || 0))}, vence dia ${c.dia_vencimento})`).join(", ") || "Nenhum"}
-- Contas bancárias: ${(accounts || []).map(a => `${a.nome} (${a.tipo || "corrente"})`).join(", ") || "Nenhuma"}
-`;
-
-  // 1. Tentar chamar a API do Google Gemini (se GEMINI_API_KEY estiver configurada nas envs)
+  // 1. Chamar Google Gemini se houver chave configurada
   const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-
   if (geminiApiKey) {
     try {
-      const prompt = `Você é um Consultor Financeiro Pessoal amigável, direto, inteligente e motivador do aplicativo "Meu Dinheiro".
-Responda a dúvida do usuário de forma concisa, prática e com números reais baseados no contexto abaixo.
+      const systemPrompt = `Você é um Consultor Financeiro Pessoal amigável, direto e motivador chamado "Assistente Meu Dinheiro".
+Dados financeiros reais de ${userName} neste mês:
+- Receitas efetivadas: ${formatCurrency(totalReceitas)}
+- Despesas pagas: ${formatCurrency(totalDespesas)}
+- Despesas agendadas (a vencer no mês): ${formatCurrency(despesasAgendadas)}
+- Saldo atual líquido: ${formatCurrency(saldoAtual)}
+- Saldo previsto até o fim do mês: ${formatCurrency(saldoPrevistoFimMes)}
+- Gastos por categoria: ${topCategorias || "Sem gastos registrados"}
+- Orçamentos: ${orcamentosInfo || "Nenhum teto configurado"}
+- Metas: ${metasInfo || "Nenhuma meta cadastrada"}
+- Cartões: ${(cards || []).map(c => `${c.nome} (limite ${formatCurrency(Number(c.limite || 0))})`).join(", ") || "Nenhum"}
 
-${contextoFinanceiro}
-
-Histórico da conversa:
-${history.slice(-4).map((h) => `${h.role === "user" ? "Usuário" : "Assistente"}: ${h.content}`).join("\n")}
-
-Pergunta do usuário: ${userPrompt}
-
-Instruções:
-- Seja encorajador, use formatação clara em Markdown (com tópicos e negrito).
-- Dê recomendações concretas de corte ou remanejamento de dinheiro se necessário.
-- Destaque valores em R$.`;
+Responda diretamente à dúvida do usuário com clareza, usando Markdown com tópicos e números formatados em R$.`;
 
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 800,
-          },
+          contents: [{ parts: [{ text: `${systemPrompt}\n\nPergunta de ${userName}: ${userPrompt}` }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 800 },
         }),
       });
 
@@ -141,67 +133,132 @@ Instruções:
           return {
             reply: text,
             suggestions: [
-              "Onde posso economizar este mês?",
-              "Como está o progresso das minhas metas?",
-              "Qual foi o meu maior gasto?",
+              "Como posso economizar este mês?",
+              "Quais foram meus maiores gastos?",
+              "Qual o saldo previsto até o fim do mês?",
             ],
           };
         }
       }
     } catch (err) {
-      console.warn("Gemini API call failed, fallback to native financial engine:", err);
+      console.warn("Gemini API fallback to advanced engine:", err);
     }
   }
 
-  // 2. Motor Heurístico / Inteligência Financeira Nativa (Gratuito, Instantâneo e Offline)
-  const q = userPrompt.toLowerCase();
+  // 2. Motor Heurístico & Processador de Linguagem Natural Especializado
+  const q = userPrompt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   let reply = "";
+  let suggestions = [
+    "Como posso economizar este mês?",
+    "Quais foram meus maiores gastos?",
+    "Como estão minhas metas financeiras?",
+    "Qual o saldo previsto até o fim do mês?",
+  ];
 
-  if (q.includes("economizar") || q.includes("poupar") || q.includes("guardar")) {
-    reply = `Olá, **${userName}**! Analisando seus dados deste mês:\n\n` +
-      `- **Total gasto:** ${formatCurrency(totalDespesas)}\n` +
-      `- **Principais categorias:** ${topCategorias || "Você ainda não tem grandes despesas registradas."}\n\n` +
-      `💡 **Recomendações do Assistente:**\n` +
-      `1. Reduza em 15% os gastos nas suas categorias de maior volume.\n` +
-      `2. Você tem ${formatCurrency(despesasAgendadas)} em contas agendadas até o fim do mês.\n` +
-      `3. Se conseguir guardar R$ 100 por semana, acumulará R$ 400 a mais todo mês para suas metas!`;
-  } else if (q.includes("meta") || q.includes("objetivo")) {
-    if (!goals || goals.length === 0) {
-      reply = `Você ainda não cadastrou metas financeiras! Que tal definir uma meta de **Reserva de Emergência** ou **Investimentos** na aba de [Metas](/metas)?`;
+  // Intenção: Saldo Previsto / Fim do Mês
+  if (q.includes("saldo previsto") || q.includes("fim do mes") || q.includes("final do mes") || q.includes("saldo futuro") || q.includes("vai sobrar")) {
+    reply = `📈 **Projeção de Saldo para o Fim do Mês:**\n\n` +
+      `• **Saldo Atual (Líquido):** ${formatCurrency(saldoAtual)}\n` +
+      `• **Receitas Agendadas:** + ${formatCurrency(receitasAgendadas)}\n` +
+      `• **Despesas Agendadas (A Pagar):** - ${formatCurrency(despesasAgendadas)}\n\n` +
+      `🎯 **Saldo Estimado ao Final do Mês:** **${formatCurrency(saldoPrevistoFimMes)}**\n\n` +
+      (saldoPrevistoFimMes >= 0
+        ? `✨ Você fechará o mês no positivo! Uma ótima oportunidade para aportar nas suas [Metas Financeiras](/metas).`
+        : `⚠️ Atenção: Suas despesas agendadas superam as receitas previstas em ${formatCurrency(Math.abs(saldoPrevistoFimMes))}. Recomendo revisar os lançamentos na aba de [Transações](/transacoes).`);
+    suggestions = ["Como posso economizar este mês?", "Quais foram meus maiores gastos?", "Acompanhar meus orçamentos"];
+  }
+
+  // Intenção: Dicas de Economia / Poupar
+  else if (q.includes("economizar") || q.includes("poupar") || q.includes("guardar") || q.includes("cortar gasto") || q.includes("dica")) {
+    const maiorCat = topCategoriasList[0];
+    reply = `💡 **Diagnóstico de Economia para ${userName}:**\n\n` +
+      `• **Total desembolsado no mês:** ${formatCurrency(totalDespesas)}\n` +
+      (maiorCat ? `• **Maior foco de gasto:** Categoria **${maiorCat[0]}** (${formatCurrency(maiorCat[1])})\n\n` : `\n`) +
+      `📌 **Plano de Ação Recomendado:**\n` +
+      `1. **Regra dos 10%**: Tente reduzir 10% nas despesas de ${maiorCat ? maiorCat[0] : "consumo diário"}, economizando cerca de ${maiorCat ? formatCurrency(maiorCat[1] * 0.1) : "R$ 50,00"}.\n` +
+      `2. **Atenção aos Recorrentes**: Você tem ${formatCurrency(despesasAgendadas)} em contas agendadas. Verifique se há assinaturas que não usa com frequência.\n` +
+      `3. **Poupe no início**: Assim que receber suas receitas, separe primeiro o valor da sua meta antes de gastar com supérfluos.`;
+    suggestions = ["Qual o saldo previsto até o fim do mês?", "Como estão minhas metas financeiras?", "Quais foram meus maiores gastos?"];
+  }
+
+  // Intenção: Maiores Gastos / Onde foi o dinheiro
+  else if (q.includes("maior") || q.includes("gasto") || q.includes("onde foi") || q.includes("gastando mais") || q.includes("despesas")) {
+    if (topCategoriasList.length === 0) {
+      reply = `Você ainda não possui despesas registradas neste mês. Assim que fizer novos lançamentos, mostrarei o ranking exato!`;
     } else {
-      reply = `🎯 **Status das suas Metas:**\n\n` +
-        metasInfo.split("; ").map((m) => `• ${m}`).join("\n") +
-        `\n\n💡 Continue fazendo aportes mensais para acelerar o alcance dos seus objetivos!`;
+      reply = `🔍 **Ranking dos seus Gastos no Mês:**\n\n` +
+        topCategoriasList.map(([cat, val], idx) => `${idx + 1}º **${cat}**: ${formatCurrency(val)} (${Math.round((val / (totalDespesas || 1)) * 100)}% do total)`).join("\n") +
+        `\n\n💰 **Total de Despesas Efetivadas:** **${formatCurrency(totalDespesas)}**`;
     }
-  } else if (q.includes("orçamento") || q.includes("limite") || q.includes("teto")) {
+    suggestions = ["Como posso economizar este mês?", "Qual o saldo previsto até o fim do mês?", "Acompanhar meus orçamentos"];
+  }
+
+  // Intenção: Metas Financeiras
+  else if (q.includes("meta") || q.includes("objetivo") || q.includes("reserva") || q.includes("sonho")) {
+    if (!goals || goals.length === 0) {
+      reply = `Você ainda não cadastrou nenhuma meta financeira! Definir metas (ex: *Reserva de Emergência*, *Viagem*, *Carro*) ajuda a manter o foco para poupar.\n\n👉 Cadastre sua primeira meta na aba [Metas](/metas)!`;
+    } else {
+      reply = `🎯 **Status das suas Metas Financeiras:**\n\n` +
+        (goals || []).map((g) => {
+          const atual = Number(g.valor_atual || 0);
+          const alvo = Number(g.valor_alvo || 0);
+          const pct = alvo > 0 ? Math.min(100, Math.round((atual / alvo) * 100)) : 0;
+          return `• **${g.nome}**: ${formatCurrency(atual)} de ${formatCurrency(alvo)} (**${pct}% atingido**)`;
+        }).join("\n") +
+        `\n\n💡 Dica: Que tal programar um aporte mensal recorrente para bater essas metas mais rápido?`;
+    }
+    suggestions = ["Como posso economizar este mês?", "Qual o saldo previsto até o fim do mês?", "Quais foram meus maiores gastos?"];
+  }
+
+  // Intenção: Orçamentos
+  else if (q.includes("orcamento") || q.includes("teto") || q.includes("limite")) {
     if (!budgets || budgets.length === 0) {
-      reply = `Você ainda não definiu tetos de orçamento! Vá na aba de [Orçamentos](/orcamentos) para estipular limites por categoria e evitar surpresas no final do mês.`;
+      reply = `Você ainda não configurou orçamentos mensais! Estipular tetos por categoria (ex: Alimentação, Lazer) evita que você gaste mais do que ganha.\n\n👉 Crie seus limites na aba [Orçamentos](/orcamentos)!`;
     } else {
       reply = `📊 **Acompanhamento de Orçamentos do Mês:**\n\n` +
-        orcamentosInfo.split("; ").map((o) => `• ${o}`).join("\n");
+        (budgets || []).map((b) => {
+          const cat = catMap.get(b.categoria_id) || "Categoria";
+          const gasto = gastosPorCategoria[cat] || 0;
+          const teto = Number(b.valor_limite || 0);
+          const pct = teto > 0 ? Math.round((gasto / teto) * 100) : 0;
+          const status = pct >= 100 ? "🚨 ESTOURADO" : pct >= 80 ? "⚠️ ATENÇÃO" : "✅ NORMAL";
+          return `• **${cat}**: ${formatCurrency(gasto)} / ${formatCurrency(teto)} (${pct}% - ${status})`;
+        }).join("\n");
     }
-  } else if (q.includes("maior") || q.includes("gasto") || q.includes("categoria")) {
-    reply = `🔍 **Visão dos seus Gastos:**\n\n` +
-      `- **Despesas pagas:** ${formatCurrency(totalDespesas)}\n` +
-      `- **Distribuição:** ${topCategorias || "Sem lançamentos recentes."}\n\n` +
-      `Seu saldo líquido no momento é de **${formatCurrency(saldoLiquido)}**.`;
-  } else {
-    reply = `Olá, **${userName}**! 🤖 Aqui está o seu resumo financeiro em tempo real:\n\n` +
-      `• **Receitas no mês:** ${formatCurrency(totalReceitas)}\n` +
-      `• **Despesas pagas:** ${formatCurrency(totalDespesas)}\n` +
-      `• **Despesas agendadas:** ${formatCurrency(despesasAgendadas)}\n` +
-      `• **Resultado líquido:** ${formatCurrency(saldoLiquido)}\n\n` +
-      `Como posso te ajudar a melhorar seu controle financeiro hoje?`;
+    suggestions = ["Como posso economizar este mês?", "Qual o saldo previsto até o fim do mês?", "Quais foram meus maiores gastos?"];
+  }
+
+  // Intenção: Cartões e Faturas
+  else if (q.includes("cartao") || q.includes("fatura") || q.includes("credito") || q.includes("limite")) {
+    if (!cards || cards.length === 0) {
+      reply = `Você ainda não cadastrou cartões de crédito. Acesse a aba [Cartões](/cartoes) para registrar seus cartões e acompanhar faturas em tempo real!`;
+    } else {
+      reply = `💳 **Visão dos seus Cartões de Crédito:**\n\n` +
+        cards.map((c) => {
+          const gastos = (transactions || [])
+            .filter((t) => t.cartao_id === c.id && t.tipo === "despesa")
+            .reduce((acc, t) => acc + Number(t.valor), 0);
+          const limite = Number(c.limite || 0);
+          const disp = Math.max(0, limite - gastos);
+          return `• **${c.nome}**: Fatura atual em **${formatCurrency(gastos)}** | Vencimento dia **${c.dia_vencimento}** (Limite disponível: ${formatCurrency(disp)})`;
+        }).join("\n");
+    }
+    suggestions = ["Qual o saldo previsto até o fim do mês?", "Como posso economizar este mês?", "Quais foram meus maiores gastos?"];
+  }
+
+  // Intenção Genérica / Boas-vindas
+  else {
+    reply = `Olá, **${userName}**! 🤖 Aqui está o seu panorama financeiro atual:\n\n` +
+      `• **Receitas Recebidas:** ${formatCurrency(totalReceitas)}\n` +
+      `• **Despesas Efetivadas:** ${formatCurrency(totalDespesas)}\n` +
+      `• **Saldo em Caixa:** **${formatCurrency(saldoAtual)}**\n` +
+      `• **Previsão até o fim do mês:** **${formatCurrency(saldoPrevistoFimMes)}**\n\n` +
+      `O que gostaria de detalhar agora?`;
   }
 
   return {
     reply,
-    suggestions: [
-      "Como posso economizar este mês?",
-      "Quais foram meus maiores gastos?",
-      "Como estão minhas metas financeiras?",
-      "Acompanhar meus orçamentos",
-    ],
+    suggestions,
   };
 }
