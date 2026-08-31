@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Plus, Menu } from "lucide-react";
+import { Bell, Plus, Menu, Search } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useTransactionModal } from "@/components/transactions/transaction-modal-context";
@@ -17,9 +17,10 @@ function getGreeting() {
 interface TopbarProps {
   userName: string;
   onMenuClick?: () => void;
+  onSearchClick?: () => void;
 }
 
-export function Topbar({ userName, onMenuClick }: TopbarProps) {
+export function Topbar({ userName, onMenuClick, onSearchClick }: TopbarProps) {
   const { open } = useTransactionModal();
   const today = new Intl.DateTimeFormat("pt-BR", {
     weekday: "short",
@@ -47,7 +48,32 @@ export function Topbar({ userName, onMenuClick }: TopbarProps) {
         </div>
       </div>
 
+      {/* Barra de Busca Rápida Central / Desktop */}
+      <div className="hidden lg:flex flex-1 max-w-xs mx-4">
+        <button
+          onClick={onSearchClick}
+          className="flex w-full items-center justify-between gap-2 rounded-full border border-border bg-paper-raised/60 px-3 py-1.5 text-xs text-text-muted hover:border-brand hover:text-text-primary transition-all"
+        >
+          <div className="flex items-center gap-2">
+            <Search className="h-3.5 w-3.5" />
+            <span>Buscar no app...</span>
+          </div>
+          <kbd className="rounded bg-paper px-1.5 py-0.5 text-[10px] font-mono border border-border">
+            Ctrl K
+          </kbd>
+        </button>
+      </div>
+
       <div className="flex items-center gap-1.5 md:gap-2">
+        {/* Ícone de Busca no Mobile/Tablet */}
+        <button
+          onClick={onSearchClick}
+          aria-label="Buscar"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-paper-raised hover:text-text-primary lg:hidden"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+
         <Button onClick={open} size="sm" className="hidden sm:inline-flex gap-1 h-8 text-xs md:h-9 md:text-sm">
           <Plus className="h-3.5 w-3.5 strokeWidth={2.5}" />
           Nova transação

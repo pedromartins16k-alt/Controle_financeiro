@@ -6,12 +6,36 @@ import { TransactionsList } from "@/components/transactions/transactions-list";
 import { NewTransactionButton } from "@/components/transactions/new-transaction-button";
 import type { TransactionRow } from "@/lib/types";
 
-export default async function TransacoesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ tipo?: string; q?: string }>;
-}) {
-  const { tipo = "", q = "" } = await searchParams;
+interface TransacoesPageProps {
+  searchParams: Promise<{
+    tipo?: string;
+    q?: string;
+    status?: string;
+    categoria_id?: string;
+    conta_id?: string;
+    cartao_id?: string;
+    forma_pagamento?: string;
+    data_inicio?: string;
+    data_fim?: string;
+    valor_min?: string;
+    valor_max?: string;
+  }>;
+}
+
+export default async function TransacoesPage({ searchParams }: TransacoesPageProps) {
+  const {
+    tipo = "",
+    q = "",
+    status = "",
+    categoria_id = "",
+    conta_id = "",
+    cartao_id = "",
+    forma_pagamento = "",
+    data_inicio = "",
+    data_fim = "",
+    valor_min = "",
+    valor_max = "",
+  } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -42,14 +66,26 @@ export default async function TransacoesPage({
 
   let query = supabase
     .from("transactions")
-    .select("id, descricao, valor, tipo, data, categoria_id, conta_id, cartao_id, forma_pagamento")
+    .select("id, descricao, valor, tipo, data, categoria_id, conta_id, cartao_id, forma_pagamento, status")
     .eq("user_id", user.id)
     .order("data", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(200);
 
+  // Filtros Básicos
   if (tipo) query = query.eq("tipo", tipo);
   if (q) query = query.ilike("descricao", `%${q}%`);
+
+  // Filtros Avançados
+  if (status) query = query.eq("status", status);
+  if (categoria_id) query = query.eq("categoria_id", categoria_id);
+  if (conta_id) query = query.eq("conta_id", conta_id);
+  if (cartao_id) query = query.eq("cartao_id", cartao_id);
+  if (forma_pagamento) query = query.eq("forma_pagamento", forma_pagamento);
+  if (data_inicio) query = query.gte("data", data_inicio);
+  if (data_fim) query = query.lte("data", data_fim);
+  if (valor_min) query = query.gte("valor", Number(valor_min));
+  if (valor_max) query = query.lte("valor", Number(valor_max));
 
   const { data: rows, error } = await query;
   if (error) {
@@ -92,7 +128,13 @@ export default async function TransacoesPage({
           </div>
         </div>
 
-        <TransactionsFilters tipo={tipo} q={q} />
+        <TransactionsFilters
+          tipo={tipo}
+          q={q}
+          categories={categories ?? []}
+          accounts={accounts ?? []}
+          cards={cards ?? []}
+        />
         <TransactionsList data={transacoes} />
       </div>
     </AppShell>
