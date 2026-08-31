@@ -29,7 +29,7 @@ export function AiChatView({ userName }: { userName: string }) {
     {
       id: "welcome",
       role: "assistant",
-      content: `Olá, **${userName}**! Sou o seu **Assistente Financeiro Inteligente** 🤖✨\n\nAnaliso suas receitas, despesas, cartões, metas e orçamentos em tempo real para te ajudar a economizar e tomar melhores decisões.\n\nComo posso te ajudar hoje?`,
+      content: `Olá, ${userName}! Sou o seu Assistente Financeiro Inteligente 🤖✨\n\nAnaliso suas receitas, despesas, cartões, metas e orçamentos em tempo real para te ajudar a economizar e tomar melhores decisões.\n\nComo posso te ajudar hoje?`,
       timestamp: "Agora",
       suggestions: INITIAL_SUGGESTIONS,
     },
@@ -94,7 +94,7 @@ export function AiChatView({ userName }: { userName: string }) {
       {
         id: "welcome",
         role: "assistant",
-        content: `Olá, **${userName}**! Chat reiniciado. Como posso te ajudar com suas finanças agora?`,
+        content: `Olá, ${userName}! Chat reiniciado. Como posso te ajudar com suas finanças agora?`,
         timestamp: "Agora",
         suggestions: INITIAL_SUGGESTIONS,
       },

@@ -121,7 +121,8 @@ DADOS FINANCEIROS EM TEMPO REAL DE ${userName.toUpperCase()}:
 
 REGRAS:
 1. Responda diretamente ao que o usuário perguntar. Se ele perguntar o nome, diga que é o Assistente Financeiro IA. Se perguntar o saldo previsto, informe ${formatCurrency(saldoPrevistoFimMes)} e explique o cálculo.
-2. Seja conciso e use formatação limpa.`;
+2. NUNCA coloque asteriscos (**) ao redor do nome ${userName} (escreva apenas ${userName}).
+3. Seja conciso e use formatação limpa.`;
 
       const messagesPayload = [
         { role: "system", content: systemPrompt },
@@ -316,7 +317,7 @@ Responda diretamente à dúvida do usuário com clareza, usando Markdown com tó
 
   // Intenção Genérica / Boas-vindas
   else {
-    reply = `Olá, **${userName}**! 🤖 Aqui está o seu panorama financeiro atual:\n\n` +
+    reply = `Olá, ${userName}! 🤖 Aqui está o seu panorama financeiro atual:\n\n` +
       `• **Receitas Recebidas:** ${formatCurrency(totalReceitas)}\n` +
       `• **Despesas Efetivadas:** ${formatCurrency(totalDespesas)}\n` +
       `• **Saldo em Caixa:** **${formatCurrency(saldoAtual)}**\n` +
