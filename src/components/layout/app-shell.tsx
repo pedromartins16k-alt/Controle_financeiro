@@ -6,6 +6,7 @@ import { Topbar } from "./topbar";
 import { TransactionModalProvider } from "@/components/transactions/transaction-modal-context";
 import { TransactionModal } from "@/components/transactions/transaction-modal";
 import { GlobalSearchDialog } from "@/components/search/global-search-dialog";
+import { AmbientMeshCanvas } from "@/components/ui/ambient-mesh-canvas";
 
 export function AppShell({
   children,
@@ -31,14 +32,15 @@ export function AppShell({
 
   return (
     <TransactionModalProvider>
-      <div className="flex min-h-screen bg-paper">
+      <div className="relative flex min-h-screen bg-paper overflow-x-hidden selection:bg-brand/30 selection:text-brand-strong">
+        <AmbientMeshCanvas />
         {/* Menu Lateral Desktop e Gaveta Mobile */}
         <Sidebar
           mobileOpen={mobileMenuOpen}
           onMobileClose={() => setMobileMenuOpen(false)}
         />
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="relative z-10 flex min-w-0 flex-1 flex-col">
           <Topbar
             userName={userName}
             onMenuClick={() => setMobileMenuOpen(true)}

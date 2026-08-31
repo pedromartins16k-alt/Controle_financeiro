@@ -29,13 +29,13 @@ export function Topbar({ userName, onMenuClick, onSearchClick }: TopbarProps) {
   }).format(new Date());
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-border bg-paper/90 px-3 backdrop-blur md:h-16 md:px-8">
-      <div className="flex items-center gap-2 min-w-0">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-white/[0.08] bg-[#0a0f0d]/75 px-3.5 backdrop-blur-xl md:h-16 md:px-8">
+      <div className="flex items-center gap-2.5 min-w-0">
         {/* Botão Hambúrguer no Celular */}
         <button
           onClick={onMenuClick}
           aria-label="Abrir menu lateral"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-paper-raised hover:text-text-primary md:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-white/[0.06] hover:text-text-primary md:hidden"
         >
           <Menu className="h-5 w-5 strokeWidth={2}" />
         </button>
@@ -52,30 +52,34 @@ export function Topbar({ userName, onMenuClick, onSearchClick }: TopbarProps) {
       <div className="hidden lg:flex flex-1 max-w-xs mx-4">
         <button
           onClick={onSearchClick}
-          className="flex w-full items-center justify-between gap-2 rounded-full border border-border bg-paper-raised/60 px-3 py-1.5 text-xs text-text-muted hover:border-brand hover:text-text-primary transition-all"
+          className="flex w-full items-center justify-between gap-2 rounded-full border border-white/10 bg-black/40 px-3.5 py-1.5 text-xs text-text-muted hover:border-emerald-500/40 hover:text-text-primary transition-all shadow-inner"
         >
           <div className="flex items-center gap-2">
-            <Search className="h-3.5 w-3.5" />
+            <Search className="h-3.5 w-3.5 text-emerald-400" />
             <span>Buscar no app...</span>
           </div>
-          <kbd className="rounded bg-paper px-1.5 py-0.5 text-[10px] font-mono border border-border">
+          <kbd className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-mono border border-white/10 text-text-muted">
             Ctrl K
           </kbd>
         </button>
       </div>
 
-      <div className="flex items-center gap-1.5 md:gap-2">
+      <div className="flex items-center gap-2 md:gap-3">
         {/* Ícone de Busca no Mobile/Tablet */}
         <button
           onClick={onSearchClick}
           aria-label="Buscar"
-          className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-paper-raised hover:text-text-primary lg:hidden"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-white/[0.06] hover:text-text-primary lg:hidden"
         >
           <Search className="h-4 w-4" />
         </button>
 
-        <Button onClick={open} size="sm" className="hidden sm:inline-flex gap-1 h-8 text-xs md:h-9 md:text-sm">
-          <Plus className="h-3.5 w-3.5 strokeWidth={2.5}" />
+        <Button
+          onClick={open}
+          size="sm"
+          className="hidden sm:inline-flex gap-1.5 h-8.5 rounded-full px-4 text-xs font-bold text-black bg-emerald-400 hover:bg-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.4)] transition-all md:h-9 md:text-sm"
+        >
+          <Plus className="h-4 w-4 strokeWidth={2.5}" />
           Nova transação
         </Button>
         <div className="hidden md:block">
@@ -84,15 +88,15 @@ export function Topbar({ userName, onMenuClick, onSearchClick }: TopbarProps) {
         <a
           href="/notificacoes"
           aria-label="Notificações"
-          className="relative flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-paper-raised hover:text-text-primary md:h-9 md:w-9"
+          className="relative flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.08] bg-black/30 text-text-secondary transition-colors hover:bg-white/[0.06] hover:text-text-primary md:h-9 md:w-9"
         >
           <Bell className="h-4 w-4 strokeWidth={2}" />
-          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-expense" />
+          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
         </a>
         <a
           href="/configuracoes"
           aria-label="Perfil"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-soft font-display text-xs font-medium text-brand-strong dark:text-brand md:h-9 md:w-9 md:text-sm"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-950/60 font-display text-xs font-bold text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)] md:h-9 md:w-9 md:text-sm"
         >
           {userName.charAt(0).toUpperCase()}
         </a>

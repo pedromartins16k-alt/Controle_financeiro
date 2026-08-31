@@ -3,8 +3,8 @@
 import * as React from "react";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -20,19 +20,19 @@ export function EvolutionChart({ data }: { data: EvolucaoPoint[] }) {
   const [period, setPeriod] = React.useState<(typeof PERIODS)[number]>("6M");
 
   return (
-    <Card className="col-span-1 p-3.5 xl:col-span-2 md:p-5">
-      <CardHeader className="mb-2 flex items-center justify-between">
-        <CardTitle className="text-xs font-semibold text-text-primary md:text-base">
+    <Card className="col-span-1 p-4 xl:col-span-2 md:p-6">
+      <CardHeader className="mb-3 flex items-center justify-between">
+        <CardTitle className="text-sm font-semibold text-text-primary md:text-base">
           Evolução financeira
         </CardTitle>
-        <div className="flex gap-0.5 rounded-full bg-paper p-0.5">
+        <div className="flex gap-1 rounded-full bg-black/40 border border-white/10 p-1 backdrop-blur-md">
           {PERIODS.map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors md:px-2.5 md:py-1 md:text-xs ${
+              className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-all md:px-3 md:py-1 md:text-xs ${
                 period === p
-                  ? "bg-paper-raised text-text-primary shadow-sm"
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)] font-semibold"
                   : "text-text-muted hover:text-text-primary"
               }`}
             >
@@ -42,48 +42,58 @@ export function EvolutionChart({ data }: { data: EvolucaoPoint[] }) {
         </div>
       </CardHeader>
 
-      <div className="h-48 w-full md:h-64">
+      <div className="h-52 w-full md:h-72">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ left: -25, right: 5, top: 5, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+          <AreaChart data={data} margin={{ left: -20, right: 10, top: 15, bottom: 0 }}>
+            <defs>
+              <linearGradient id="neonEmeraldGlow" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity={0.45} />
+                <stop offset="60%" stopColor="#10b981" stopOpacity={0.1} />
+                <stop offset="100%" stopColor="#10b981" stopOpacity={0.0} />
+              </linearGradient>
+              <linearGradient id="neonRoseGlow" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.06)" />
             <XAxis
               dataKey="mes"
               tickLine={false}
               axisLine={false}
-              tick={{ fill: "var(--text-muted)", fontSize: 10 }}
+              tick={{ fill: "#64748b", fontSize: 11 }}
             />
             <YAxis
               tickLine={false}
               axisLine={false}
-              tick={{ fill: "var(--text-muted)", fontSize: 10 }}
-              tickFormatter={(v) => `${v / 1000}k`}
+              tick={{ fill: "#64748b", fontSize: 11 }}
+              tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
             />
             <Tooltip
-              formatter={(value) => formatCurrency(Number(value))}
+              formatter={(value) => [formatCurrency(Number(value)), ""]}
               contentStyle={{
-                background: "var(--paper-raised)",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
+                background: "rgba(16, 24, 20, 0.92)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(52, 211, 153, 0.3)",
+                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 0 15px rgba(16, 185, 129, 0.2)",
+                borderRadius: 12,
                 fontSize: 12,
+                color: "#f0fdf4",
               }}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="receitas"
               name="Receitas"
-              stroke="var(--income)"
-              strokeWidth={2}
-              dot={false}
+              stroke="#34d399"
+              strokeWidth={3}
+              fillOpacity={1}
+              fill="url(#neonEmeraldGlow)"
+              dot={{ r: 3, fill: "#34d399", stroke: "#064e3b", strokeWidth: 1.5 }}
+              activeDot={{ r: 6, fill: "#34d399", stroke: "#ffffff", strokeWidth: 2, className: "animate-pulse" }}
             />
-            <Line
-              type="monotone"
-              dataKey="despesas"
-              name="Despesas"
-              stroke="var(--expense)"
-              strokeWidth={2}
-              dot={false}
-            />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </Card>

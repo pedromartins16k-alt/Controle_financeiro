@@ -44,31 +44,31 @@
 }
 
 .dark {
-  --paper: #0f1512;
-  --paper-raised: #161d19;
+  --paper: #080c0a;
+  --paper-raised: #101714;
   --ink: #f5f6f4;
   --ink-raised: #ffffff;
 
-  --text-primary: #eef1ee;
-  --text-secondary: #a3ada7;
-  --text-muted: #6f7973;
+  --text-primary: #f0fdf4;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
 
-  --brand: #3fa787;
-  --brand-strong: #6fc7a9;
-  --brand-soft: #17332a;
+  --brand: #10b981;
+  --brand-strong: #34d399;
+  --brand-soft: #064e3b;
 
-  --income: #4bbf8c;
-  --income-soft: #163025;
-  --expense: #e2704f;
-  --expense-soft: #3a1f18;
-  --alert: #dba848;
-  --alert-soft: #33270f;
-  --info: #7796c6;
-  --info-soft: #1c2a3e;
+  --income: #10b981;
+  --income-soft: #064e3b;
+  --expense: #f43f5e;
+  --expense-soft: #4c0519;
+  --alert: #fbbf24;
+  --alert-soft: #451a03;
+  --info: #38bdf8;
+  --info-soft: #082f49;
 
-  --border: #262f2a;
-  --border-strong: #37423c;
-  --ledger-line: #2a332d;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(52, 211, 153, 0.25);
+  --ledger-line: rgba(52, 211, 153, 0.2);
 }
 
 @theme inline {
@@ -115,6 +115,43 @@ body {
   color: var(--text-primary);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Efeito 3D Glassmorphism & Neon */
+.glass-card-3d {
+  background: linear-gradient(135deg, rgba(16, 23, 20, 0.85) 0%, rgba(10, 15, 13, 0.92) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 32px -8px rgba(0, 0, 0, 0.7);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-3d:hover {
+  border-color: rgba(52, 211, 153, 0.28);
+  box-shadow: 
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.18),
+    0 18px 42px -10px rgba(16, 185, 129, 0.15),
+    0 0 20px -2px rgba(16, 185, 129, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Efeito de Brilho Neon para Números e Destaques */
+.neon-glow-green {
+  color: #34d399;
+  text-shadow: 0 0 16px rgba(52, 211, 153, 0.45);
+}
+
+.neon-glow-red {
+  color: #fb7185;
+  text-shadow: 0 0 14px rgba(244, 63, 94, 0.4);
+}
+
+.neon-glow-white {
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
 }
 
 /* Assinatura visual: linha de razão sob números financeiros grandes */
