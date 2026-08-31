@@ -24,6 +24,45 @@ const INITIAL_SUGGESTIONS = [
   "Qual o saldo previsto até o fim do mês?",
 ];
 
+function FormattedMessage({ content }: { content: string }) {
+  const parseLine = (text: string) => {
+    const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return (
+          <strong key={i} className="font-semibold text-text-primary">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (linkMatch) {
+        return (
+          <a
+            key={i}
+            href={linkMatch[2]}
+            className="text-brand hover:underline font-medium"
+          >
+            {linkMatch[1]}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
+  return (
+    <div className="whitespace-pre-wrap">
+      {content.split("\n").map((line, idx) => (
+        <span key={idx}>
+          {parseLine(line)}
+          {idx < content.split("\n").length - 1 && "\n"}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function AiChatView({ userName }: { userName: string }) {
   const [messages, setMessages] = React.useState<ChatMessage[]>([
     {
@@ -195,9 +234,7 @@ export function AiChatView({ userName }: { userName: string }) {
                         : "bg-brand text-paper-raised rounded-br-none"
                     }`}
                   >
-                    <div className="whitespace-pre-wrap">
-                      {msg.content}
-                    </div>
+                    <FormattedMessage content={msg.content} />
                   </div>
 
                   {/* Sugestões de Respostas Rápidas */}
