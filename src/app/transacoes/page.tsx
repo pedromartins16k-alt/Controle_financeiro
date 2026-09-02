@@ -66,7 +66,7 @@ export default async function TransacoesPage({ searchParams }: TransacoesPagePro
 
   let query = supabase
     .from("transactions")
-    .select("id, descricao, valor, tipo, data, categoria_id, conta_id, cartao_id, forma_pagamento, status")
+    .select("id, descricao, valor, tipo, data, categoria_id, conta_id, cartao_id, forma_pagamento, status, is_recorrente, intervalo_recorrencia, parcela_atual, total_parcelas, grupo_id")
     .eq("user_id", user.id)
     .order("data", { ascending: false })
     .order("created_at", { ascending: false })
@@ -107,6 +107,11 @@ export default async function TransacoesPage({ searchParams }: TransacoesPagePro
       data: t.data,
       valor: Number(t.valor),
       tipo: t.tipo as TransactionRow["tipo"],
+      is_recorrente: Boolean(t.is_recorrente),
+      intervalo_recorrencia: t.intervalo_recorrencia,
+      parcela_atual: t.parcela_atual ? Number(t.parcela_atual) : null,
+      total_parcelas: t.total_parcelas ? Number(t.total_parcelas) : null,
+      grupo_id: t.grupo_id,
     };
   });
 

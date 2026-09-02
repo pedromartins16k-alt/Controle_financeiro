@@ -546,7 +546,7 @@ export function TransactionModal() {
                         min="2"
                         max="360"
                         value={parcelas}
-                        onChange={(e) => setParcelas(Number(e.target.value))}
+                        onChange={(e) => setParcelas(Math.max(2, Number(e.target.value) || 2))}
                         className="h-10 w-full rounded-xl border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
                       />
                     </div>
@@ -562,13 +562,40 @@ export function TransactionModal() {
                         onChange={(e) => setIntervalo(e.target.value as any)}
                         className="h-10 w-full rounded-xl border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
                       >
-                        <option value="mensal">Mensal</option>
-                        <option value="semanal">Semanal</option>
-                        <option value="anual">Anual</option>
+                        <option value="mensal">Mensal (todo mês)</option>
+                        <option value="semanal">Semanal (toda semana)</option>
+                        <option value="anual">Anual (todo ano)</option>
                       </select>
                     </div>
                   )}
                 </div>
+
+                {/* Preview e simulação em tempo real */}
+                {tipoRepeticao === "parcelada" && valorStr && (
+                  <div className="rounded-lg bg-paper-raised p-2.5 text-xs text-text-secondary border border-border flex items-center justify-between">
+                    <span>
+                      Simulação: <strong>{parcelas}x</strong> de{" "}
+                      <strong className="text-text-primary">
+                        {formatCurrency(
+                          (parseFloat(valorStr.replace(/\./g, "").replace(",", ".")) || 0) / parcelas
+                        )}
+                      </strong>
+                    </span>
+                    <span className="text-text-muted text-[11px]">Mensal</span>
+                  </div>
+                )}
+
+                {tipoRepeticao === "fixa" && valorStr && (
+                  <div className="rounded-lg bg-paper-raised p-2.5 text-xs text-text-secondary border border-border flex items-center justify-between">
+                    <span>
+                      Lançamento fixo de{" "}
+                      <strong className="text-text-primary">
+                        {formatCurrency(parseFloat(valorStr.replace(/\./g, "").replace(",", ".")) || 0)}
+                      </strong>
+                    </span>
+                    <span className="text-brand font-semibold capitalize">{intervalo}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>

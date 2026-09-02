@@ -64,18 +64,27 @@ export function TransactionsList({ data }: { data: TransactionRow[] }) {
               <p className="flex items-center gap-2 truncate text-sm font-medium text-text-primary">
                 {t.descricao}
                 {t.is_recorrente && (
-                  <span className="rounded-md border border-brand/20 bg-brand/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand">
-                    Recorrente
+                  <span className="inline-flex items-center gap-1 rounded-md border border-brand/30 bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand-strong dark:text-brand">
+                    <span>↻</span>
+                    <span>{t.intervalo_recorrencia ? t.intervalo_recorrencia.charAt(0).toUpperCase() + t.intervalo_recorrencia.slice(1) : "Recorrente"}</span>
                   </span>
                 )}
                 {t.total_parcelas && t.total_parcelas > 1 && (
-                  <span className="rounded-md border border-info/20 bg-info/10 px-1.5 py-0.5 text-[10px] font-semibold text-info">
-                    {t.parcela_atual}/{t.total_parcelas}
+                  <span className="inline-flex items-center gap-1 rounded-md border border-info/30 bg-info-soft px-1.5 py-0.5 text-[10px] font-semibold text-info">
+                    <span>Parcela {t.parcela_atual || 1}/{t.total_parcelas}</span>
+                    {t.parcela_atual && t.total_parcelas - t.parcela_atual > 0 && (
+                      <span className="text-text-muted font-normal">
+                        ({t.total_parcelas - t.parcela_atual} restante{t.total_parcelas - t.parcela_atual > 1 ? "s" : ""})
+                      </span>
+                    )}
                   </span>
                 )}
               </p>
-              <p className="truncate text-xs text-text-muted">
+              <p className="truncate text-xs text-text-muted mt-0.5">
                 {t.categoria} • {t.conta} • {formatDate(t.data)}
+                {t.total_parcelas && t.total_parcelas > 1 && t.parcela_atual && t.total_parcelas - t.parcela_atual > 0 && (
+                  <span> • Restam {formatCurrency(t.valor * (t.total_parcelas - t.parcela_atual))}</span>
+                )}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-3 pl-3">
