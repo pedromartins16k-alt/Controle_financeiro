@@ -110,8 +110,8 @@ export function GlobalSearchDialog({
             .ilike("nome", `%${term}%`)
             .limit(3),
           supabase
-            .from("financial_goals")
-            .select("id, nome, valor_alvo, valor_atual")
+            .from("goals")
+            .select("id, nome, valor_objetivo, valor_atual")
             .eq("user_id", user.id)
             .ilike("nome", `%${term}%`)
             .limit(3),
@@ -162,7 +162,7 @@ export function GlobalSearchDialog({
           items.push({
             id: `meta-${m.id}`,
             title: m.nome,
-            subtitle: `Alvo: ${formatCurrency(Number(m.valor_alvo || 0))}`,
+            subtitle: `Alvo: ${formatCurrency(Number(m.valor_objetivo || 0))}`,
             category: "metas",
             icon: Target,
             href: "/metas",

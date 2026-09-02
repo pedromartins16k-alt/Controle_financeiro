@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, ReceiptText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate, getAmountTone } from "@/lib/utils";
 import { deleteTransaction } from "@/lib/supabase/transaction-actions";
@@ -29,12 +29,23 @@ export function TransactionsList({ data }: { data: TransactionRow[] }) {
 
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-paper-raised py-16 text-center">
-        <p className="text-sm text-text-secondary">
-          Nenhuma transação encontrada.
-        </p>
-        <button onClick={open} className="text-sm font-medium text-brand hover:underline">
-          + Adicionar transação
+      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border-strong bg-paper-raised/50 py-16 px-4 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand dark:bg-emerald-950/60 dark:text-emerald-400 mb-1">
+          <ReceiptText className="h-6 w-6" />
+        </div>
+        <div>
+          <p className="font-display text-base font-semibold text-text-primary">
+            Você ainda não possui transações neste período
+          </p>
+          <p className="text-xs text-text-muted mt-1 max-w-sm">
+            Registre sua primeira receita ou despesa para começar a acompanhar seu fluxo financeiro com clareza.
+          </p>
+        </div>
+        <button
+          onClick={open}
+          className="mt-2 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-xs font-semibold text-paper-raised shadow-sm transition-all hover:opacity-95"
+        >
+          + Registrar transação
         </button>
       </div>
     );
