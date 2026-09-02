@@ -100,10 +100,18 @@ export async function askFinancialAI(
   }).join("; ");
 
   // 1. Chamar Groq se houver chave configurada (Super Rápido)
-  const groqApiKey = process.env.GROQ_API_KEY;
-  if (groqApiKey) {
-    try {
-      const systemPrompt = `Você é o "Assistente Financeiro IA" pessoal de ${userName}.
+  const rawGroqKey = process.env.GROQ_API_KEY;
+  const groqApiKey = rawGroqKey?.trim().replace(/^["']|["']$/g, "");
+
+  if (!groqApiKey) {
+    console.warn("[IA] GROQ_API_KEY não encontrada nas variáveis de ambiente da Vercel.");
+  } else {
+    // Tenta primeiro o modelo versatile e, se falhar (429 rate limit, timeout, etc.), tenta o 8b-instant
+    const groqModels = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+
+    for (const modelName of groqModels) {
+      try {
+        const systemPrompt = `Você é o "Assistente Financeiro IA" pessoal de ${userName}.
 Seu objetivo é ser direto, simpático, motivador e responder SEMPRE com precisão à dúvida específica do usuário.
 Responda em Português do Brasil com formatação rica em Markdown (listas, negrito e emojis).
 
@@ -124,47 +132,51 @@ REGRAS:
 2. NUNCA coloque asteriscos (**) ao redor do nome ${userName} (escreva apenas ${userName}).
 3. Seja conciso e use formatação limpa.`;
 
-      const messagesPayload = [
-        { role: "system", content: systemPrompt },
-        ...history.slice(-6).map((h) => ({
-          role: h.role === "assistant" ? "assistant" : "user",
-          content: h.content,
-        })),
-        { role: "user", content: userPrompt },
-      ];
+        const messagesPayload = [
+          { role: "system", content: systemPrompt },
+          ...history.slice(-6).map((h) => ({
+            role: h.role === "assistant" ? "assistant" : "user",
+            content: h.content,
+          })),
+          { role: "user", content: userPrompt },
+        ];
 
-      const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${groqApiKey}`,
-        },
-        body: JSON.stringify({
-          // A7 FIX: modelo válido da Groq (era "openai/gpt-oss-120b", que não existe)
-          model: "llama-3.3-70b-versatile",
-          messages: messagesPayload,
-          temperature: 0.4,
-          max_tokens: 700,
-        }),
-      });
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${groqApiKey}`,
+          },
+          body: JSON.stringify({
+            model: modelName,
+            messages: messagesPayload,
+            temperature: 0.4,
+            max_tokens: 700,
+          }),
+          signal: AbortSignal.timeout(12000),
+        });
 
-      if (groqRes.ok) {
-        const groqJson = await groqRes.json();
-        const text = groqJson.choices?.[0]?.message?.content;
-        if (text) {
-          return {
-            reply: text,
-            suggestions: [
-              "Qual o saldo previsto até o fim do mês?",
-              "Como posso economizar este mês?",
-              "Quais foram meus maiores gastos?",
-              "Como estão minhas metas financeiras?",
-            ],
-          };
+        if (groqRes.ok) {
+          const groqJson = await groqRes.json();
+          const text = groqJson.choices?.[0]?.message?.content;
+          if (text) {
+            return {
+              reply: text,
+              suggestions: [
+                "Qual o saldo previsto até o fim do mês?",
+                "Como posso economizar este mês?",
+                "Quais foram meus maiores gastos?",
+                "Como estão minhas metas financeiras?",
+              ],
+            };
+          }
+        } else {
+          const errBody = await groqRes.text();
+          console.error(`[Groq Error ${groqRes.status} no modelo ${modelName}]:`, errBody);
         }
+      } catch (err) {
+        console.warn(`[Groq Falha no modelo ${modelName}]:`, err);
       }
-    } catch (err) {
-      console.warn("Groq API fallback:", err);
     }
   }
 
