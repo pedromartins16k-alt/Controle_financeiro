@@ -1,9 +1,23 @@
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { formatCurrency, cn } from "@/lib/utils";
 import type { DashboardSummary } from "@/lib/types";
 
-function Delta({ pct, invert = false }: { pct: number; invert?: boolean }) {
+/**
+ * C2 FIX: Exibe variação percentual válida, ou "Primeiro período" se não houver base.
+ * Nunca mostra percentuais absurdos como +604% com mês anterior zerado.
+ */
+function Delta({ pct, invert = false }: { pct: number | null; invert?: boolean }) {
+  // Sem base de comparação — exibe estado neutro
+  if (pct === null) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-2 py-0.5 rounded-md border border-border text-text-muted bg-paper">
+        <Minus className="h-3 w-3" strokeWidth={2} />
+        Primeiro período
+      </span>
+    );
+  }
+
   const positive = pct >= 0;
   const isGood = invert ? !positive : positive;
   return (
@@ -11,14 +25,14 @@ function Delta({ pct, invert = false }: { pct: number; invert?: boolean }) {
       className={cn(
         "inline-flex items-center gap-0.5 text-[11px] font-medium px-2 py-0.5 rounded-md border",
         isGood
-          ? "text-emerald-400 bg-emerald-950/50 border-emerald-500/25 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
-          : "text-rose-400 bg-rose-950/50 border-rose-500/25 shadow-[0_0_10px_rgba(244,63,94,0.15)]"
+          ? "text-income dark:text-emerald-400 bg-income-soft dark:bg-emerald-950/50 border-income/25 dark:border-emerald-500/25"
+          : "text-expense dark:text-rose-400 bg-expense-soft dark:bg-rose-950/50 border-expense/25 dark:border-rose-500/25"
       )}
     >
       {positive ? (
-        <ArrowUpRight className="h-3 w-3 strokeWidth={2.5}" />
+        <ArrowUpRight className="h-3 w-3" strokeWidth={2.5} />
       ) : (
-        <ArrowDownRight className="h-3 w-3 strokeWidth={2.5}" />
+        <ArrowDownRight className="h-3 w-3" strokeWidth={2.5} />
       )}
       {Math.abs(pct).toFixed(1)}%
     </span>
@@ -37,7 +51,14 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
           <Delta pct={data.saldoVariacaoPct} />
         </CardHeader>
         <CardContent>
-          <p className="pb-1 font-display text-xl font-bold tabular-data md:text-3xl neon-glow-green">
+          <p
+            className={cn(
+              "pb-1 font-display text-xl font-bold tabular-data md:text-3xl",
+              data.saldoAtual >= 0
+                ? "text-income dark:neon-glow-green"
+                : "text-expense dark:neon-glow-red"
+            )}
+          >
             {formatCurrency(data.saldoAtual)}
           </p>
           <p className="mt-1 text-[10px] text-text-muted md:text-xs">vs. mês anterior</p>
@@ -53,7 +74,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
           <Delta pct={data.receitasVariacaoPct} />
         </CardHeader>
         <CardContent>
-          <p className="pb-1 font-display text-xl font-bold tabular-data md:text-3xl neon-glow-green">
+          <p className="pb-1 font-display text-xl font-bold tabular-data md:text-3xl text-income dark:neon-glow-green">
             {formatCurrency(data.receitasMes)}
           </p>
           <p className="mt-1 text-[10px] text-text-muted md:text-xs">vs. mês anterior</p>
@@ -69,7 +90,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
           <Delta pct={data.despesasVariacaoPct} invert />
         </CardHeader>
         <CardContent>
-          <p className="pb-1 font-display text-xl font-bold tabular-data md:text-3xl neon-glow-red">
+          <p className="pb-1 font-display text-xl font-bold tabular-data md:text-3xl text-expense dark:neon-glow-red">
             {formatCurrency(data.despesasMes)}
           </p>
           <p className="mt-1 text-[10px] text-text-muted md:text-xs">vs. mês anterior</p>
@@ -84,10 +105,14 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className={cn(
-            "pb-1 font-display text-xl font-bold tabular-data md:text-3xl",
-            data.economiaMes >= 0 ? "neon-glow-white" : "neon-glow-red"
-          )}>
+          <p
+            className={cn(
+              "pb-1 font-display text-xl font-bold tabular-data md:text-3xl",
+              data.economiaMes >= 0
+                ? "text-text-primary dark:neon-glow-white"
+                : "text-expense dark:neon-glow-red"
+            )}
+          >
             {formatCurrency(data.economiaMes)}
           </p>
           <p className="mt-1 text-[10px] text-text-muted md:text-xs">

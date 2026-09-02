@@ -2,18 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { parseValorBR } from "@/lib/utils";
 
 export interface BudgetGoalFormState {
   error?: string;
   success?: boolean;
-}
-
-function parseValorBR(raw: string): number {
-  const cleaned = raw.trim().replace(/[^\d,.-]/g, "");
-  const normalized = cleaned.includes(",")
-    ? cleaned.replace(/\./g, "").replace(",", ".")
-    : cleaned;
-  return Number(normalized);
 }
 
 // ----------------------------------------------------
@@ -123,39 +116,19 @@ export async function createGoal(
     return { error: "Informe um valor objetivo válido maior que zero." };
   }
 
-  const payload: Record<string, any> = {
+  const { error } = await supabase.from("goals").insert({
     user_id: user.id,
     nome,
+    descricao,
     valor_objetivo: valorObjetivo,
     valor_atual: Number.isFinite(valorAtual) ? valorAtual : 0,
-  };
-
-  if (descricao) payload.descricao = descricao;
-  if (prazo) payload.prazo = prazo;
-  if (cor) payload.cor = cor;
-  if (icone) payload.icone = icone;
-
-  const { error } = await supabase.from("goals").insert(payload);
+    prazo,
+    cor,
+    icone,
+  });
 
   if (error) {
     console.error("Erro ao criar meta:", error);
-    // Se der erro de coluna (ex: cor, icone, descricao não existirem no schema original)
-    if (error.message && (error.message.includes("column") || error.code === "PGRST204" || error.code === "42703")) {
-      const minimalPayload = {
-        user_id: user.id,
-        nome,
-        valor_objetivo: valorObjetivo,
-        valor_atual: Number.isFinite(valorAtual) ? valorAtual : 0,
-        prazo: prazo || null,
-      };
-      const retry = await supabase.from("goals").insert(minimalPayload);
-      if (!retry.error) {
-        revalidatePath("/");
-        revalidatePath("/metas");
-        return { success: true };
-      }
-      return { error: retry.error.message || "Não foi possível criar a meta." };
-    }
     return { error: error.message || "Não foi possível criar a meta. Tente novamente." };
   }
 

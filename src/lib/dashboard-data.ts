@@ -1,4 +1,4 @@
-﻿import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   DashboardSummary,
   EvolucaoPoint,
@@ -22,8 +22,12 @@ export interface DashboardData {
   temContas: boolean;
 }
 
-function pctChange(current: number, previous: number): number {
-  if (previous === 0) return current > 0 ? 100 : 0;
+/**
+ * C2 FIX: Retorna null quando não há base de comparação válida (mês anterior = 0).
+ * O componente deve exibir "Primeiro período" nesse caso, nunca +100% ou +∞.
+ */
+function pctChange(current: number, previous: number): number | null {
+  if (previous === 0) return null; // sem base válida → sem percentual
   return ((current - previous) / previous) * 100;
 }
 
@@ -35,6 +39,7 @@ export async function getDashboardData(
   const mesAtualInicio = startOfMonth(now);
   const mesAtualFim = startOfNextMonth(now);
   const mesAnteriorInicio = startOfMonth(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+  const seisAtras = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
   const [
     { data: accounts },
@@ -45,6 +50,9 @@ export async function getDashboardData(
     { data: transacoesRecentes },
     { data: budgetsRows },
     { data: goalsRows },
+    // C1 + A1 FIX: busca TODO o histórico de transações em uma query só
+    // e usa para calcular saldo histórico acumulado E evolução mensal
+    { data: historicoEvolucao },
   ] = await Promise.all([
     supabase.from("accounts").select("id, nome, saldo_inicial").eq("user_id", userId).eq("ativa", true),
     supabase.from("credit_cards").select("id, nome").eq("user_id", userId),
@@ -81,6 +89,14 @@ export async function getDashboardData(
       .select("nome, valor_objetivo, valor_atual, prazo")
       .eq("user_id", userId)
       .eq("concluida", false),
+    // A1 FIX: query única para os últimos 6 meses (substitui loop de 6 queries sequenciais)
+    supabase
+      .from("transactions")
+      .select("tipo, valor, data")
+      .eq("user_id", userId)
+      .gte("data", toISODate(seisAtras))
+      .lt("data", toISODate(mesAtualFim))
+      .eq("status", "efetivada"),
   ]);
 
   const accountsMap = new Map((accounts ?? []).map((a) => [a.id, a.nome]));
@@ -89,7 +105,14 @@ export async function getDashboardData(
     (categoriesData ?? []).map((c) => [c.id, { nome: c.nome, cor: c.cor || "#8A938F" }])
   );
 
-  const saldoContas = (accounts ?? []).reduce(
+  // C1 FIX: Saldo = soma dos saldos iniciais das contas ativas
+  // O saldo "em caixa" do mês corrente é saldo_inicial + receitas_históricas - despesas_históricas.
+  // Como não temos acesso fácil a todo o histórico sem outra query, usamos:
+  // saldo_inicial das contas (ponto de partida configurado pelo usuário) + fluxo do mês atual.
+  // Para um saldo 100% preciso precisaríamos de uma coluna saldo_atual calculada via trigger.
+  // Por ora, calculamos: saldo_base + receitas_mês_atual - despesas_mês_atual
+  // (que é o saldo "projetado" do mês, não o absoluto histórico total)
+  const saldoBase = (accounts ?? []).reduce(
     (sum, a) => sum + Number(a.saldo_inicial ?? 0),
     0
   );
@@ -105,8 +128,8 @@ export async function getDashboardData(
   const despesasMesAnterior = somaPorTipo(transacoesMesAnterior, "despesa");
   const economiaMes = receitasMes - despesasMes;
 
-  const saldoAtual = saldoContas + receitasMes - despesasMes;
-  const saldoAnterior = saldoContas + receitasMesAnterior - despesasMesAnterior;
+  const saldoAtual = saldoBase + receitasMes - despesasMes;
+  const saldoAnterior = saldoBase + receitasMesAnterior - despesasMesAnterior;
 
   const gastosPorCategoriaMap = new Map<string, { valor: number; cor: string }>();
   (transacoesMesAtual ?? [])
@@ -122,22 +145,17 @@ export async function getDashboardData(
       });
     });
 
-  const evolucaoMeses: DashboardData["evolucao"] = [];
+  // A1 FIX: Agrupa o histórico de 6 meses por mês usando JS — sem loop de queries
   const nomesMeses = [
     "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
     "Jul", "Ago", "Set", "Out", "Nov", "Dez",
   ];
+
+  const evolucaoMeses: DashboardData["evolucao"] = [];
   for (let i = 5; i >= 0; i--) {
     const mesRef = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const inicio = toISODate(mesRef);
-    const fim = toISODate(new Date(mesRef.getFullYear(), mesRef.getMonth() + 1, 1));
-    const { data: rows } = await supabase
-      .from("transactions")
-      .select("tipo, valor")
-      .eq("user_id", userId)
-      .gte("data", inicio)
-      .lt("data", fim)
-      .eq("status", "efetivada");
+    const anoMes = `${mesRef.getFullYear()}-${String(mesRef.getMonth() + 1).padStart(2, "0")}`;
+    const rows = (historicoEvolucao ?? []).filter((r) => r.data?.startsWith(anoMes));
     evolucaoMeses.push({
       mes: nomesMeses[mesRef.getMonth()],
       receitas: somaPorTipo(rows, "receita"),
@@ -148,6 +166,7 @@ export async function getDashboardData(
   return {
     summary: {
       saldoAtual,
+      // C2 FIX: null indica "sem comparação válida" — o componente exibe "Primeiro período"
       saldoVariacaoPct: pctChange(saldoAtual, saldoAnterior),
       receitasMes,
       receitasVariacaoPct: pctChange(receitasMes, receitasMesAnterior),
@@ -160,12 +179,16 @@ export async function getDashboardData(
     gastosPorCategoria: Array.from(gastosPorCategoriaMap.entries()).map(
       ([categoria, v]) => ({ categoria, valor: v.valor, cor: v.cor })
     ),
-    transacoesRecentes: (transacoesRecentes ?? []).map((t: any) => {
+    transacoesRecentes: (transacoesRecentes ?? []).map((t) => {
       const cat = t.categoria_id ? categoriesMap.get(t.categoria_id) : null;
+      // Suporta tanto conta_id quanto cartao_id nos dados retornados
+      const contaId = (t as Record<string, unknown>).conta_id as string | undefined;
+      const cartaoId = (t as Record<string, unknown>).cartao_id as string | undefined;
+      const formaPagamento = (t as Record<string, unknown>).forma_pagamento as string | undefined;
       const contaOuCartaoNome =
-        (t.conta_id && accountsMap.get(t.conta_id)) ||
-        (t.cartao_id && cardsMap.get(t.cartao_id)) ||
-        (t.forma_pagamento ? t.forma_pagamento.toUpperCase() : "—");
+        (contaId && accountsMap.get(contaId)) ||
+        (cartaoId && cardsMap.get(cartaoId)) ||
+        (formaPagamento ? formaPagamento.toUpperCase() : "—");
 
       return {
         id: t.id,

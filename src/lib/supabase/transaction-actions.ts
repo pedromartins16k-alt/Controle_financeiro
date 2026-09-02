@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { parseValorBR } from "@/lib/utils";
 
 export interface TransactionFormState {
   error?: string;
@@ -18,15 +19,6 @@ const FORMAS_PAGAMENTO = [
   "transferencia",
   "outros",
 ] as const;
-
-/** Converte um valor digitado em formato BR ("1.250,50" ou "25,00") para número. */
-function parseValorBR(raw: string): number {
-  const cleaned = raw.trim().replace(/[^\d,.-]/g, "");
-  const normalized = cleaned.includes(",")
-    ? cleaned.replace(/\./g, "").replace(",", ".")
-    : cleaned;
-  return Number(normalized);
-}
 
 export async function createTransaction(
   _prevState: TransactionFormState,
@@ -81,7 +73,6 @@ export async function createTransaction(
   if (repetir && tipoRepeticao === "parcelada" && parcelas < 2) {
     return { error: "Informe um número válido de parcelas." };
   }
-  // FIX: cap máximo de parcelas para evitar milhares de entradas acidentais
   if (repetir && tipoRepeticao === "parcelada" && parcelas > 360) {
     return { error: "O número máximo de parcelas é 360 (30 anos)." };
   }
@@ -89,11 +80,10 @@ export async function createTransaction(
   const accountValue = formaPagamento === "credito" ? null : accountId;
   const cartaoValue = tipo === "despesa" && formaPagamento === "credito" ? cartaoId : null;
 
-  const basePayload: Record<string, any> = {
+  const basePayload: Record<string, unknown> = {
     user_id: user.id,
     tipo,
     descricao,
-    // Nota: status será definido por entrada abaixo (efetivada ou agendada)
   };
 
   if (categoriaId && tipo !== "transferencia") {
@@ -112,7 +102,7 @@ export async function createTransaction(
     basePayload.cartao_id = cartaoValue;
   }
 
-  let insertPayloads: any[] = [];
+  let insertPayloads: Record<string, unknown>[] = [];
 
   // Data de hoje (sem hora) para comparar com cada entrada
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -143,7 +133,7 @@ export async function createTransaction(
 
       const entryDateStr = iterationDate.toISOString().slice(0, 10);
 
-      // FIX: entradas com data futura ficam como "agendada";
+      // Entradas com data futura ficam como "agendada";
       // apenas a primeira (ou passadas/hoje) ficam "efetivada".
       const entryStatus = entryDateStr <= todayStr ? "efetivada" : "agendada";
 

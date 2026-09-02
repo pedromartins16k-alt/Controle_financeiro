@@ -45,7 +45,7 @@ export async function askFinancialAI(
     supabase.from("credit_cards").select("id, nome, limite, dia_vencimento, dia_fechamento").eq("user_id", user.id).eq("ativo", true),
     supabase.from("categories").select("id, nome, tipo"),
     supabase.from("budgets").select("valor_limite, categoria_id").eq("user_id", user.id),
-    supabase.from("financial_goals").select("nome, valor_alvo, valor_atual, prazo").eq("user_id", user.id),
+    supabase.from("goals").select("nome, valor_objetivo, valor_atual, prazo").eq("user_id", user.id).eq("concluida", false),
     supabase.from("transactions").select("descricao, valor, tipo, data, categoria_id, cartao_id, status, forma_pagamento").eq("user_id", user.id).gte("data", firstDay).lte("data", lastDay),
   ]);
 
@@ -96,7 +96,7 @@ export async function askFinancialAI(
   }).join("; ");
 
   const metasInfo = (goals || []).map((g) => {
-    return `${g.nome}: ${formatCurrency(Number(g.valor_atual || 0))} acumulado de ${formatCurrency(Number(g.valor_alvo || 0))}`;
+    return `${g.nome}: ${formatCurrency(Number(g.valor_atual || 0))} acumulado de ${formatCurrency(Number(g.valor_objetivo || 0))}`;
   }).join("; ");
 
   // 1. Chamar Groq se houver chave configurada (Super Rápido)
@@ -140,7 +140,8 @@ REGRAS:
           "Authorization": `Bearer ${groqApiKey}`,
         },
         body: JSON.stringify({
-          model: "openai/gpt-oss-120b",
+          // A7 FIX: modelo válido da Groq (era "openai/gpt-oss-120b", que não existe)
+          model: "llama-3.3-70b-versatile",
           messages: messagesPayload,
           temperature: 0.4,
           max_tokens: 700,
@@ -270,7 +271,7 @@ Responda diretamente à dúvida do usuário com clareza, usando Markdown com tó
       reply = `🎯 **Status das suas Metas Financeiras:**\n\n` +
         (goals || []).map((g) => {
           const atual = Number(g.valor_atual || 0);
-          const alvo = Number(g.valor_alvo || 0);
+          const alvo = Number(g.valor_objetivo || 0);
           const pct = alvo > 0 ? Math.min(100, Math.round((atual / alvo) * 100)) : 0;
           return `• **${g.nome}**: ${formatCurrency(atual)} de ${formatCurrency(alvo)} (**${pct}% atingido**)`;
         }).join("\n") +

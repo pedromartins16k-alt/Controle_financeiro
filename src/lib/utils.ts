@@ -25,3 +25,15 @@ export function getAmountTone(type: "receita" | "despesa" | "transferencia") {
   if (type === "despesa") return { sign: "-", tone: "expense" as const };
   return { sign: "", tone: "info" as const };
 }
+
+/**
+ * Converte um valor digitado em formato BR ("1.250,50" ou "25,00") para número.
+ * Centralizado aqui para evitar duplicação nos arquivos de actions.
+ */
+export function parseValorBR(raw: string): number {
+  const cleaned = raw.trim().replace(/[^\d,.-]/g, "");
+  const normalized = cleaned.includes(",")
+    ? cleaned.replace(/\./g, "").replace(",", ".")
+    : cleaned;
+  return Number(normalized);
+}

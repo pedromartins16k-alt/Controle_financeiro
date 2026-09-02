@@ -1,10 +1,13 @@
 export interface DashboardSummary {
   saldoAtual: number;
-  saldoVariacaoPct: number;
+  /** null = sem comparação válida (mês anterior zerado → exibe "Primeiro período") */
+  saldoVariacaoPct: number | null;
   receitasMes: number;
-  receitasVariacaoPct: number;
+  /** null = sem comparação válida */
+  receitasVariacaoPct: number | null;
   despesasMes: number;
-  despesasVariacaoPct: number;
+  /** null = sem comparação válida */
+  despesasVariacaoPct: number | null;
   economiaMes: number;
   economiaPctRenda: number;
 }

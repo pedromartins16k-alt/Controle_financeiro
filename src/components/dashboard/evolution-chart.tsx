@@ -83,15 +83,26 @@ export function EvolutionChart({ data }: { data: EvolucaoPoint[] }) {
               }}
             />
             <Area
-              type="monotone"
+              type="linear"
               dataKey="receitas"
               name="Receitas"
               stroke="#34d399"
-              strokeWidth={3}
+              strokeWidth={2.5}
               fillOpacity={1}
               fill="url(#neonEmeraldGlow)"
               dot={{ r: 3, fill: "#34d399", stroke: "#064e3b", strokeWidth: 1.5 }}
-              activeDot={{ r: 6, fill: "#34d399", stroke: "#ffffff", strokeWidth: 2, className: "animate-pulse" }}
+              activeDot={{ r: 5, fill: "#34d399", stroke: "#ffffff", strokeWidth: 2 }}
+            />
+            <Area
+              type="linear"
+              dataKey="despesas"
+              name="Despesas"
+              stroke="#f43f5e"
+              strokeWidth={2}
+              fillOpacity={1}
+              fill="url(#neonRoseGlow)"
+              dot={{ r: 2.5, fill: "#f43f5e", stroke: "#4c0519", strokeWidth: 1.5 }}
+              activeDot={{ r: 5, fill: "#f43f5e", stroke: "#ffffff", strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>

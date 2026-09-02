@@ -1,7 +1,8 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { parseValorBR } from "@/lib/utils";
 
 export interface AccountFormState {
   error?: string;
@@ -16,15 +17,6 @@ const TIPOS = [
   "investimento",
   "outros",
 ] as const;
-
-/** Converte um valor digitado em formato BR ("1.250,50" ou "25,00") para número. */
-function parseValorBR(raw: string): number {
-  const cleaned = raw.trim().replace(/[^\d,.-]/g, "");
-  const normalized = cleaned.includes(",")
-    ? cleaned.replace(/\./g, "").replace(",", ".")
-    : cleaned;
-  return Number(normalized);
-}
 
 export async function createAccount(
   _prevState: AccountFormState,

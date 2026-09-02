@@ -1,20 +1,12 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { parseValorBR } from "@/lib/utils";
 
 export interface CardFormState {
   error?: string;
   success?: boolean;
-}
-
-/** Converte um valor digitado em formato BR ("1.250,50" ou "25,00") para número. */
-function parseValorBR(raw: string): number {
-  const cleaned = raw.trim().replace(/[^\d,.-]/g, "");
-  const normalized = cleaned.includes(",")
-    ? cleaned.replace(/\./g, "").replace(",", ".")
-    : cleaned;
-  return Number(normalized);
 }
 
 export async function createCreditCard(
@@ -167,20 +159,36 @@ export async function payCreditCardInvoice(
       .from("credit_cards")
       .select("nome")
       .eq("id", cartaoId)
+      .eq("user_id", user.id) // C3: garante que o cartão pertence ao usuário
       .single();
 
     const nomeCartao = cartao?.nome || "Cartão";
 
-    await supabase.from("transactions").insert({
+    // C3 FIX: usa conta_id (padrão do schema) com fallback para account_id
+    const payload: Record<string, unknown> = {
       user_id: user.id,
       tipo: "despesa",
       descricao: "Pagamento de Fatura - " + nomeCartao,
       valor: valorFatura,
-      account_id: contaPagamentoId,
+      conta_id: contaPagamentoId,
       forma_pagamento: "debito",
       data: new Date().toISOString().slice(0, 10),
       status: "efetivada",
-    });
+    };
+
+    const { error: insertError } = await supabase.from("transactions").insert(payload);
+
+    // Fallback para account_id se conta_id não existir no schema
+    if (insertError && insertError.message?.toLowerCase().includes("conta_id")) {
+      const fallbackPayload = { ...payload, account_id: contaPagamentoId };
+      delete fallbackPayload.conta_id;
+      const { error: fallbackError } = await supabase.from("transactions").insert(fallbackPayload);
+      if (fallbackError) {
+        return { error: "Não foi possível registrar o pagamento da fatura." };
+      }
+    } else if (insertError) {
+      return { error: "Não foi possível registrar o pagamento da fatura." };
+    }
   }
 
   revalidatePath("/");
