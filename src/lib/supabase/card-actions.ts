@@ -180,7 +180,7 @@ export async function payCreditCardInvoice(
 
     // Fallback para account_id se conta_id não existir no schema
     if (insertError && insertError.message?.toLowerCase().includes("conta_id")) {
-      const fallbackPayload = { ...payload, account_id: contaPagamentoId };
+      const fallbackPayload: Record<string, unknown> = { ...payload, account_id: contaPagamentoId };
       delete fallbackPayload.conta_id;
       const { error: fallbackError } = await supabase.from("transactions").insert(fallbackPayload);
       if (fallbackError) {
