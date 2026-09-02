@@ -100,11 +100,18 @@ export async function askFinancialAI(
   }).join("; ");
 
   // 1. Chamar Groq se houver chave configurada (Super Rápido)
-  const rawGroqKey = process.env.GROQ_API_KEY;
+  const rawGroqKey =
+    process.env.GROQ_API_KEY ||
+    process.env.NEXT_PUBLIC_GROQ_API_KEY ||
+    process.env.GROQ_KEY ||
+    process.env.GROQ_APIKEY;
   const groqApiKey = rawGroqKey?.trim().replace(/^["']|["']$/g, "");
 
+  let lastGroqError: string | null = null;
+
   if (!groqApiKey) {
-    console.warn("[IA] GROQ_API_KEY não encontrada nas variáveis de ambiente da Vercel.");
+    lastGroqError = "A chave `GROQ_API_KEY` não está configurada nas variáveis de ambiente da Vercel.";
+    console.warn("[IA]", lastGroqError);
   } else {
     // Tenta primeiro o modelo versatile e, se falhar (429 rate limit, timeout, etc.), tenta o 8b-instant
     const groqModels = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
@@ -128,7 +135,7 @@ DADOS FINANCEIROS EM TEMPO REAL DE ${userName.toUpperCase()}:
 - Cartões de Crédito: ${(cards || []).map(c => `${c.nome} (limite ${formatCurrency(Number(c.limite || 0))})`).join(", ") || "Nenhum"}
 
 REGRAS:
-1. Responda diretamente ao que o usuário perguntar. Se ele perguntar o nome, diga que é o Assistente Financeiro IA. Se perguntar o saldo previsto, informe ${formatCurrency(saldoPrevistoFimMes)} e explique o cálculo.
+1. Responda diretamente ao que o usuário perguntar. Se ele falar "oi" ou cumprimentar, responda educadamente como o Assistente Financeiro IA e pergunte como pode ajudar. Se perguntar o saldo previsto, informe ${formatCurrency(saldoPrevistoFimMes)} e explique o cálculo.
 2. NUNCA coloque asteriscos (**) ao redor do nome ${userName} (escreva apenas ${userName}).
 3. Seja conciso e use formatação limpa.`;
 
@@ -172,9 +179,11 @@ REGRAS:
           }
         } else {
           const errBody = await groqRes.text();
+          lastGroqError = `Erro HTTP ${groqRes.status} (${groqRes.statusText}) da Groq: ${errBody}`;
           console.error(`[Groq Error ${groqRes.status} no modelo ${modelName}]:`, errBody);
         }
-      } catch (err) {
+      } catch (err: any) {
+        lastGroqError = `Falha de conexão com a Groq: ${err?.message || err}`;
         console.warn(`[Groq Falha no modelo ${modelName}]:`, err);
       }
     }
@@ -330,12 +339,17 @@ Responda diretamente à dúvida do usuário com clareza, usando Markdown com tó
 
   // Intenção Genérica / Boas-vindas
   else {
+    const groqNotice = lastGroqError
+      ? `\n\n> ⚠️ **Aviso de Diagnóstico:** A IA da Groq não respondeu (${lastGroqError}). Esta é uma resposta de contingência.`
+      : "";
+
     reply = `Olá, ${userName}! 🤖 Aqui está o seu panorama financeiro atual:\n\n` +
       `• **Receitas Recebidas:** ${formatCurrency(totalReceitas)}\n` +
       `• **Despesas Efetivadas:** ${formatCurrency(totalDespesas)}\n` +
       `• **Saldo em Caixa:** **${formatCurrency(saldoAtual)}**\n` +
       `• **Previsão até o fim do mês:** **${formatCurrency(saldoPrevistoFimMes)}**\n\n` +
-      `O que gostaria de detalhar agora?`;
+      `O que gostaria de detalhar agora?` +
+      groqNotice;
   }
 
   return {
