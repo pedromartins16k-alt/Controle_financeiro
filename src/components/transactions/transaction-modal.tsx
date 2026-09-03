@@ -7,10 +7,11 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Sparkles, Check, ArrowRight } from "lucide-react";
+import { X, Sparkles, Check, ArrowRight, AlertCircle } from "lucide-react";
 import { useTransactionModal } from "./transaction-modal-context";
 import {
   createTransaction,
+  updateTransaction,
   type TransactionFormState,
 } from "@/lib/supabase/transaction-actions";
 import { createClient } from "@/lib/supabase/client";
@@ -51,12 +52,31 @@ const FORMAS_PAGAMENTO = [
 ];
 
 export function TransactionModal() {
-  const { isOpen, close } = useTransactionModal();
+  const { isOpen, close, editingTransaction } = useTransactionModal();
+  const isEditMode = Boolean(editingTransaction);
   const router = useRouter();
-  const [state, formAction] = useActionState<TransactionFormState, FormData>(
+
+  // Para modo edição: cria um bound action com o id fixo
+  const boundUpdateAction = React.useMemo(
+    () =>
+      editingTransaction
+        ? updateTransaction.bind(null, editingTransaction.id)
+        : null,
+    [editingTransaction]
+  );
+
+  const [createState, createFormAction] = useActionState<TransactionFormState, FormData>(
     createTransaction,
     {}
   );
+  const [updateState, updateFormAction] = useActionState<TransactionFormState, FormData>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (boundUpdateAction ?? createTransaction) as any,
+    {}
+  );
+
+  const state = isEditMode ? updateState : createState;
+  const formAction = isEditMode ? updateFormAction : createFormAction;
 
   const [tipo, setTipo] = React.useState<Tipo>("despesa");
   const [formaPagamento, setFormaPagamento] = React.useState<string>("pix");
@@ -113,6 +133,41 @@ export function TransactionModal() {
       cancelled = true;
     };
   }, [isOpen]);
+
+  // Pré-preenche o formulário quando abre em modo edição
+  React.useEffect(() => {
+    if (!isOpen || !editingTransaction) {
+      // Ao abrir para criação, resetar todos os campos
+      if (isOpen && !editingTransaction) {
+        setTipo("despesa");
+        setValorStr("");
+        setDescricaoStr("");
+        setCategoriaIdStr("");
+        setFormaPagamento("pix");
+        setRepetir(false);
+        setTipoRepeticao("parcelada");
+        setIntervalo("mensal");
+        setParcelas(2);
+        setShowQuickInput(false);
+      }
+      return;
+    }
+    // Modo edição: pré-preenche com dados da transação existente
+    setTipo(editingTransaction.tipo);
+    setDescricaoStr(editingTransaction.descricao);
+    setValorStr(
+      editingTransaction.valor.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    );
+    setCategoriaIdStr(editingTransaction.categoria_id ?? "");
+    setFormaPagamento(editingTransaction.forma_pagamento ?? "pix");
+    setRepetir(false); // nunca mostrar repetição ao editar
+    setShowQuickInput(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, editingTransaction?.id]);
+
 
   // Parser em tempo real quando o usuário digita no input rápido
   React.useEffect(() => {
@@ -198,14 +253,14 @@ export function TransactionModal() {
         onClick={(e) => e.stopPropagation()}
         className="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-paper-raised p-6 shadow-2xl sm:rounded-2xl border border-border"
       >
-        {/* Banner de Feedback de Sucesso Claro */}
+        {/* Banner de Feedback de Sucesso */}
         {showSuccessToast && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-paper-raised/95 backdrop-blur-sm rounded-2xl animate-in fade-in duration-200">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 mb-3">
               <Check className="h-8 w-8 strokeWidth={3}" />
             </div>
             <p className="font-display text-lg font-bold text-text-primary">
-              ✓ Transação adicionada com sucesso!
+              {isEditMode ? "✓ Transação atualizada!" : "✓ Transação adicionada com sucesso!"}
             </p>
             <p className="text-xs text-text-muted mt-1">Atualizando seus saldos e relatórios...</p>
           </div>
@@ -214,17 +269,19 @@ export function TransactionModal() {
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 id="nova-transacao-titulo" className="font-display text-xl font-bold text-text-primary">
-              Nova transação
+              {isEditMode ? "Editar transação" : "Nova transação"}
             </h2>
-            <button
-              type="button"
-              onClick={() => setShowQuickInput((prev) => !prev)}
-              className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-0.5 text-[11px] font-semibold text-brand transition-colors hover:bg-brand/20 dark:bg-emerald-950/60 dark:text-emerald-300"
-              title="Entrada rápida em linguagem natural"
-            >
-              <Sparkles className="h-3 w-3" />
-              Entrada com IA
-            </button>
+            {!isEditMode && (
+              <button
+                type="button"
+                onClick={() => setShowQuickInput((prev) => !prev)}
+                className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-0.5 text-[11px] font-semibold text-brand transition-colors hover:bg-brand/20 dark:bg-emerald-950/60 dark:text-emerald-300"
+                title="Entrada rápida em linguagem natural"
+              >
+                <Sparkles className="h-3 w-3" />
+                Entrada com IA
+              </button>
+            )}
           </div>
           <button
             onClick={close}
@@ -287,6 +344,18 @@ export function TransactionModal() {
         <form ref={formRef} action={formAction} className="space-y-4">
           <FormError message={state.error} />
 
+          {/* Banner informativo para transações parceladas/recorrentes em modo edição */}
+          {isEditMode && editingTransaction?.grupo_id && (
+            <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/8 p-3 text-xs text-amber-800 dark:text-amber-300">
+              <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>
+                {editingTransaction.total_parcelas && editingTransaction.total_parcelas > 1
+                  ? `Esta é a parcela ${editingTransaction.parcela_atual ?? 1}/${editingTransaction.total_parcelas}. As alterações afetam apenas esta ocorrência.`
+                  : "Esta é uma transação recorrente. As alterações afetam apenas esta ocorrência."}
+              </span>
+            </div>
+          )}
+
           {/* Tipo */}
           <div className="grid grid-cols-3 gap-1.5 rounded-full bg-paper p-1 border border-border">
             {TIPO_OPTIONS.map((opt) => (
@@ -338,7 +407,8 @@ export function TransactionModal() {
                 id="data"
                 name="data"
                 type="date"
-                defaultValue={new Date().toISOString().slice(0, 10)}
+                key={editingTransaction?.id ?? "new"} // forçar re-render ao mudar transação
+                defaultValue={editingTransaction?.data ?? new Date().toISOString().slice(0, 10)}
                 required
                 className="h-11 w-full rounded-xl border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
               />
@@ -395,6 +465,7 @@ export function TransactionModal() {
                     id="account_id"
                     name="account_id"
                     required
+                    defaultValue={editingTransaction?.conta_id ?? ""}
                     className="h-11 w-full rounded-xl border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
                   >
                     <option value="">Selecione</option>
@@ -459,6 +530,7 @@ export function TransactionModal() {
                         id="cartao_id"
                         name="cartao_id"
                         required
+                        defaultValue={editingTransaction?.cartao_id ?? ""}
                         className="h-11 w-full rounded-xl border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
                       >
                         <option value="">Selecione o cartão</option>
@@ -478,6 +550,7 @@ export function TransactionModal() {
                     <select
                       id="account_id"
                       name="account_id"
+                      defaultValue={editingTransaction?.conta_id ?? ""}
                       className="h-11 w-full rounded-xl border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
                     >
                       <option value="">Não informar</option>
@@ -493,112 +566,114 @@ export function TransactionModal() {
             )}
           </div>
 
-          <div className="rounded-xl border border-border-strong bg-paper p-4">
-            <label className="flex items-center gap-2 cursor-pointer mb-2">
-              <input
-                type="checkbox"
-                name="repetir"
-                value="true"
-                checked={repetir}
-                onChange={(e) => setRepetir(e.target.checked)}
-                className="h-4 w-4 rounded border-border-strong text-brand focus:ring-brand"
-              />
-              <span className="text-sm font-semibold text-text-primary">Repetir transação</span>
-            </label>
+          {!isEditMode && (
+            <div className="rounded-xl border border-border-strong bg-paper p-4">
+              <label className="flex items-center gap-2 cursor-pointer mb-2">
+                <input
+                  type="checkbox"
+                  name="repetir"
+                  value="true"
+                  checked={repetir}
+                  onChange={(e) => setRepetir(e.target.checked)}
+                  className="h-4 w-4 rounded border-border-strong text-brand focus:ring-brand"
+                />
+                <span className="text-sm font-semibold text-text-primary">Repetir transação</span>
+              </label>
 
-            {repetir && (
-              <div className="mt-4 space-y-4">
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="tipo_repeticao"
-                      value="parcelada"
-                      checked={tipoRepeticao === "parcelada"}
-                      onChange={() => setTipoRepeticao("parcelada")}
-                      className="h-4 w-4 border-border-strong text-brand focus:ring-brand"
-                    />
-                    <span className="text-sm text-text-primary">Parcelada</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="tipo_repeticao"
-                      value="fixa"
-                      checked={tipoRepeticao === "fixa"}
-                      onChange={() => setTipoRepeticao("fixa")}
-                      className="h-4 w-4 border-border-strong text-brand focus:ring-brand"
-                    />
-                    <span className="text-sm text-text-primary">Fixa / Assinatura</span>
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {tipoRepeticao === "parcelada" ? (
-                    <div>
-                      <label htmlFor="parcelas" className="mb-1.5 block text-xs font-semibold text-text-primary uppercase tracking-wider">
-                        Qtd. Parcelas
-                      </label>
+              {repetir && (
+                <div className="mt-4 space-y-4">
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input
-                        id="parcelas"
-                        name="parcelas"
-                        type="number"
-                        min="2"
-                        max="360"
-                        value={parcelas}
-                        onChange={(e) => setParcelas(Math.max(2, Number(e.target.value) || 2))}
-                        className="h-10 w-full rounded-xl border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
+                        type="radio"
+                        name="tipo_repeticao"
+                        value="parcelada"
+                        checked={tipoRepeticao === "parcelada"}
+                        onChange={() => setTipoRepeticao("parcelada")}
+                        className="h-4 w-4 border-border-strong text-brand focus:ring-brand"
                       />
+                      <span className="text-sm text-text-primary">Parcelada</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="tipo_repeticao"
+                        value="fixa"
+                        checked={tipoRepeticao === "fixa"}
+                        onChange={() => setTipoRepeticao("fixa")}
+                        className="h-4 w-4 border-border-strong text-brand focus:ring-brand"
+                      />
+                      <span className="text-sm text-text-primary">Fixa / Assinatura</span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {tipoRepeticao === "parcelada" ? (
+                      <div>
+                        <label htmlFor="parcelas" className="mb-1.5 block text-xs font-semibold text-text-primary uppercase tracking-wider">
+                          Qtd. Parcelas
+                        </label>
+                        <input
+                          id="parcelas"
+                          name="parcelas"
+                          type="number"
+                          min="2"
+                          max="360"
+                          value={parcelas}
+                          onChange={(e) => setParcelas(Math.max(2, Number(e.target.value) || 2))}
+                          className="h-10 w-full rounded-xl border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label htmlFor="intervalo" className="mb-1.5 block text-xs font-semibold text-text-primary uppercase tracking-wider">
+                          Intervalo
+                        </label>
+                        <select
+                          id="intervalo"
+                          name="intervalo"
+                          value={intervalo}
+                          onChange={(e) => setIntervalo(e.target.value as any)}
+                          className="h-10 w-full rounded-xl border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
+                        >
+                          <option value="mensal">Mensal (todo mês)</option>
+                          <option value="semanal">Semanal (toda semana)</option>
+                          <option value="anual">Anual (todo ano)</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Preview e simulação em tempo real */}
+                  {tipoRepeticao === "parcelada" && valorStr && (
+                    <div className="rounded-lg bg-paper-raised p-2.5 text-xs text-text-secondary border border-border flex items-center justify-between">
+                      <span>
+                        Simulação: <strong>{parcelas}x</strong> de{" "}
+                        <strong className="text-text-primary">
+                          {formatCurrency(
+                            (parseFloat(valorStr.replace(/\./g, "").replace(",", ".")) || 0) / parcelas
+                          )}
+                        </strong>
+                      </span>
+                      <span className="text-text-muted text-[11px]">Mensal</span>
                     </div>
-                  ) : (
-                    <div>
-                      <label htmlFor="intervalo" className="mb-1.5 block text-xs font-semibold text-text-primary uppercase tracking-wider">
-                        Intervalo
-                      </label>
-                      <select
-                        id="intervalo"
-                        name="intervalo"
-                        value={intervalo}
-                        onChange={(e) => setIntervalo(e.target.value as any)}
-                        className="h-10 w-full rounded-xl border border-border-strong bg-paper-raised px-3 text-sm text-text-primary outline-none focus:border-brand"
-                      >
-                        <option value="mensal">Mensal (todo mês)</option>
-                        <option value="semanal">Semanal (toda semana)</option>
-                        <option value="anual">Anual (todo ano)</option>
-                      </select>
+                  )}
+
+                  {tipoRepeticao === "fixa" && valorStr && (
+                    <div className="rounded-lg bg-paper-raised p-2.5 text-xs text-text-secondary border border-border flex items-center justify-between">
+                      <span>
+                        Lançamento fixo de{" "}
+                        <strong className="text-text-primary">
+                          {formatCurrency(parseFloat(valorStr.replace(/\./g, "").replace(",", ".")) || 0)}
+                        </strong>
+                      </span>
+                      <span className="text-brand font-semibold capitalize">{intervalo}</span>
                     </div>
                   )}
                 </div>
-
-                {/* Preview e simulação em tempo real */}
-                {tipoRepeticao === "parcelada" && valorStr && (
-                  <div className="rounded-lg bg-paper-raised p-2.5 text-xs text-text-secondary border border-border flex items-center justify-between">
-                    <span>
-                      Simulação: <strong>{parcelas}x</strong> de{" "}
-                      <strong className="text-text-primary">
-                        {formatCurrency(
-                          (parseFloat(valorStr.replace(/\./g, "").replace(",", ".")) || 0) / parcelas
-                        )}
-                      </strong>
-                    </span>
-                    <span className="text-text-muted text-[11px]">Mensal</span>
-                  </div>
-                )}
-
-                {tipoRepeticao === "fixa" && valorStr && (
-                  <div className="rounded-lg bg-paper-raised p-2.5 text-xs text-text-secondary border border-border flex items-center justify-between">
-                    <span>
-                      Lançamento fixo de{" "}
-                      <strong className="text-text-primary">
-                        {formatCurrency(parseFloat(valorStr.replace(/\./g, "").replace(",", ".")) || 0)}
-                      </strong>
-                    </span>
-                    <span className="text-brand font-semibold capitalize">{intervalo}</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           <div>
             <label htmlFor="observacao" className="mb-1.5 block text-xs font-semibold text-text-primary uppercase tracking-wider">
@@ -607,12 +682,16 @@ export function TransactionModal() {
             <textarea
               id="observacao"
               name="observacao"
+              key={editingTransaction?.id ?? "new-obs"}
+              defaultValue={editingTransaction?.observacao ?? ""}
               rows={2}
               className="w-full rounded-xl border border-border-strong bg-paper-raised px-3 py-2 text-sm text-text-primary outline-none focus:border-brand"
             />
           </div>
 
-          <SubmitButton>Salvar transação</SubmitButton>
+          <SubmitButton>
+            {isEditMode ? "Salvar alterações" : "Salvar transação"}
+          </SubmitButton>
         </form>
       </div>
     </div>

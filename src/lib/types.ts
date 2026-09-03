@@ -44,6 +44,13 @@ export interface TransactionRow {
   parcela_atual?: number | null;
   total_parcelas?: number | null;
   grupo_id?: string | null;
+  // Campos brutos necessários para pré-preencher o formulário de edição
+  conta_id?: string | null;
+  cartao_id?: string | null;
+  categoria_id?: string | null;
+  forma_pagamento?: string | null;
+  observacao?: string | null;
+  status?: string | null;
 }
 
 export interface CategoryRow {

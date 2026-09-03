@@ -1,10 +1,13 @@
 "use client";
 
 import * as React from "react";
+import type { TransactionRow } from "@/lib/types";
 
 interface TransactionModalContextValue {
   isOpen: boolean;
+  editingTransaction: TransactionRow | null;
   open: () => void;
+  openEdit: (transaction: TransactionRow) => void;
   close: () => void;
 }
 
@@ -14,14 +17,26 @@ const TransactionModalContext = React.createContext<TransactionModalContextValue
 
 export function TransactionModalProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [editingTransaction, setEditingTransaction] = React.useState<TransactionRow | null>(null);
 
   const value = React.useMemo(
     () => ({
       isOpen,
-      open: () => setIsOpen(true),
-      close: () => setIsOpen(false),
+      editingTransaction,
+      open: () => {
+        setEditingTransaction(null);
+        setIsOpen(true);
+      },
+      openEdit: (transaction: TransactionRow) => {
+        setEditingTransaction(transaction);
+        setIsOpen(true);
+      },
+      close: () => {
+        setIsOpen(false);
+        setEditingTransaction(null);
+      },
     }),
-    [isOpen]
+    [isOpen, editingTransaction]
   );
 
   return (
