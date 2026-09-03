@@ -113,13 +113,10 @@ export async function askFinancialAI(
     lastGroqError = "A chave `GROQ_API_KEY` não está configurada nas variáveis de ambiente da Vercel.";
     console.warn("[IA]", lastGroqError);
   } else {
-    // Descobre dinamicamente os modelos aos quais esta chave tem acesso na Groq
+    // Lista curada apenas com modelos oficiais ativos no Groq (sem modelos descontinuados)
     let groqModels = [
       "llama-3.3-70b-versatile",
       "llama-3.1-8b-instant",
-      "llama3-8b-8192",
-      "llama3-70b-8192",
-      "gemma2-9b-it",
     ];
 
     try {
@@ -135,7 +132,9 @@ export async function askFinancialAI(
             !id.includes("whisper") &&
             !id.includes("guard") &&
             !id.includes("vision") &&
-            (id.includes("llama") || id.includes("gemma") || id.includes("mixtral"))
+            !id.includes("gemma") && // gemma2 foi descontinuado
+            !id.includes("llama3-") && // llama3 legacy foi descontinuado
+            (id.includes("llama-3.3") || id.includes("llama-3.1"))
         );
         if (validChatModels.length > 0) {
           groqModels = validChatModels;
@@ -145,38 +144,49 @@ export async function askFinancialAI(
       // Continua com a lista padrão em caso de timeout
     }
 
+    // Montar histórico estritamente válido para a API da Groq:
+    // 1. Iniciar com role: "user" após "system" (a API proíbe iniciar com "assistant")
+    // 2. Alternar estritamente entre "user" e "assistant"
+    // 3. Remover avisos de diagnóstico antigos do histórico
+    const cleanHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
+
+    for (const h of history) {
+      if (!h.content || typeof h.content !== "string") continue;
+      // Remove notas de diagnóstico anteriores para não poluir
+      const cleanContent = h.content.split("> ⚠️")[0].trim();
+      if (!cleanContent) continue;
+
+      const role = h.role === "assistant" ? "assistant" : "user";
+
+      // A primeira mensagem após o system DEVE ser user
+      if (cleanHistory.length === 0 && role === "assistant") {
+        continue;
+      }
+
+      // Evita mensagens consecutivas com o mesmo role (Groq proíbe 2 users ou 2 assistants seguidos)
+      if (cleanHistory.length > 0 && cleanHistory[cleanHistory.length - 1].role === role) {
+        cleanHistory[cleanHistory.length - 1].content += `\n\n${cleanContent}`;
+      } else {
+        cleanHistory.push({ role, content: cleanContent });
+      }
+    }
+
+    // Se a última mensagem do histórico já for "user", unifica com a pergunta atual
+    const lastClean = cleanHistory[cleanHistory.length - 1];
+    if (lastClean && lastClean.role === "user") {
+      cleanHistory.pop();
+    }
+
+    const messagesPayload: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+      { role: "system", content: systemPrompt },
+      ...cleanHistory.slice(-6),
+      { role: "user", content: userPrompt.trim() },
+    ];
+
+    const modelErrors: string[] = [];
+
     for (const modelName of groqModels) {
       try {
-        const systemPrompt = `Você é o "Assistente Financeiro IA" pessoal de ${userName}.
-Seu objetivo é ser direto, simpático, motivador e responder SEMPRE com precisão à dúvida específica do usuário.
-Responda em Português do Brasil com formatação rica em Markdown (listas, negrito e emojis).
-
-DADOS FINANCEIROS EM TEMPO REAL DE ${userName.toUpperCase()}:
-- Receitas efetivadas no mês: ${formatCurrency(totalReceitas)}
-- Receitas agendadas (a receber): ${formatCurrency(receitasAgendadas)}
-- Despesas já pagas: ${formatCurrency(totalDespesas)}
-- Despesas agendadas (a pagar no mês): ${formatCurrency(despesasAgendadas)}
-- Saldo atual líquido em caixa: ${formatCurrency(saldoAtual)}
-- Previsão de Saldo até o fim do mês: ${formatCurrency(saldoPrevistoFimMes)}
-- Gastos por Categoria: ${topCategorias || "Nenhum gasto registrado"}
-- Orçamentos/Tetos: ${orcamentosInfo || "Nenhum teto configurado"}
-- Metas Financeiras: ${metasInfo || "Nenhuma meta cadastrada"}
-- Cartões de Crédito: ${(cards || []).map(c => `${c.nome} (limite ${formatCurrency(Number(c.limite || 0))})`).join(", ") || "Nenhum"}
-
-REGRAS:
-1. Responda diretamente ao que o usuário perguntar. Se ele falar "oi" ou cumprimentar, responda educadamente como o Assistente Financeiro IA e pergunte como pode ajudar. Se perguntar o saldo previsto, informe ${formatCurrency(saldoPrevistoFimMes)} e explique o cálculo.
-2. NUNCA coloque asteriscos (**) ao redor do nome ${userName} (escreva apenas ${userName}).
-3. Seja conciso e use formatação limpa.`;
-
-        const messagesPayload = [
-          { role: "system", content: systemPrompt },
-          ...history.slice(-6).map((h) => ({
-            role: h.role === "assistant" ? "assistant" : "user",
-            content: h.content,
-          })),
-          { role: "user", content: userPrompt },
-        ];
-
         const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -208,14 +218,18 @@ REGRAS:
           }
         } else {
           const errBody = await groqRes.text();
-          lastGroqError = `Erro HTTP ${groqRes.status} (${groqRes.statusText}) da Groq: ${errBody}`;
+          modelErrors.push(`[${modelName}: ${groqRes.status} ${errBody}]`);
           console.error(`[Groq Error ${groqRes.status} no modelo ${modelName}]:`, errBody);
         }
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
-        lastGroqError = `Falha de conexão com a Groq: ${errMsg}`;
+        modelErrors.push(`[${modelName}: ${errMsg}]`);
         console.warn(`[Groq Falha no modelo ${modelName}]:`, err);
       }
+    }
+
+    if (modelErrors.length > 0) {
+      lastGroqError = modelErrors.join(" | ");
     }
   }
 
