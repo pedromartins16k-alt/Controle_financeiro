@@ -1,5 +1,7 @@
 export interface DashboardSummary {
   saldoAtual: number;
+  saldoComprometido: number;
+  saldoDisponivel: number;
   /** null = sem comparação válida (mês anterior zerado → exibe "Primeiro período") */
   saldoVariacaoPct: number | null;
   receitasMes: number;
@@ -12,11 +14,16 @@ export interface DashboardSummary {
   economiaPctRenda: number;
 }
 
+export type ChartPeriod = "7D" | "30D" | "3M" | "6M" | "1A";
+
 export interface EvolucaoPoint {
   mes: string;
+  dataCompleta?: string;
   receitas: number;
   despesas: number;
 }
+
+export type EvolucaoDataByPeriod = Record<ChartPeriod, EvolucaoPoint[]>;
 
 export interface CategoriaGasto {
   categoria: string;

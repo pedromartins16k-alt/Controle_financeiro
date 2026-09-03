@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   DashboardSummary,
   EvolucaoPoint,
+  ChartPeriod,
   CategoriaGasto,
   TransactionRow,
   OrcamentoRow,
@@ -15,6 +16,7 @@ const toISODate = (d: Date) => d.toISOString().slice(0, 10);
 export interface DashboardData {
   summary: DashboardSummary;
   evolucao: EvolucaoPoint[];
+  evolucaoPorPeriodo: Record<ChartPeriod, EvolucaoPoint[]>;
   gastosPorCategoria: CategoriaGasto[];
   transacoesRecentes: TransactionRow[];
   orcamentos: OrcamentoRow[];
@@ -23,11 +25,11 @@ export interface DashboardData {
 }
 
 /**
- * C2 FIX: Retorna null quando não há base de comparação válida (mês anterior = 0).
- * O componente deve exibir "Primeiro período" nesse caso, nunca +100% ou +∞.
+ * Retorna null quando não há base de comparação válida (mês anterior <= 0 ou ausente).
+ * O componente exibirá "Sem comparação" ou "Primeiro período registrado".
  */
 function pctChange(current: number, previous: number): number | null {
-  if (previous === 0) return null; // sem base válida → sem percentual
+  if (!previous || previous <= 0) return null;
   return ((current - previous) / previous) * 100;
 }
 
@@ -39,45 +41,43 @@ export async function getDashboardData(
   const mesAtualInicio = startOfMonth(now);
   const mesAtualFim = startOfNextMonth(now);
   const mesAnteriorInicio = startOfMonth(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-  const seisAtras = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const umAnoAtras = new Date(now.getFullYear() - 1, now.getMonth(), 1);
 
   const [
     { data: accounts },
     { data: cards },
     { data: categoriesData },
-    { data: transacoesMesAtual },
-    { data: transacoesMesAnterior },
+    { data: todasTransacoesEfetivadas },
     { data: transacoesRecentes },
     { data: budgetsRows },
     { data: goalsRows },
-    // C1 + A1 FIX: busca TODO o histórico de transações em uma query só
-    // e usa para calcular saldo histórico acumulado E evolução mensal
-    { data: historicoEvolucao },
+    { data: faturasAbertasCartoes },
+    { data: despesasAgendadasMes },
   ] = await Promise.all([
-    supabase.from("accounts").select("id, nome, saldo_inicial").eq("user_id", userId).eq("ativa", true),
-    supabase.from("credit_cards").select("id, nome").eq("user_id", userId),
-    supabase.from("categories").select("id, nome, cor"),
+    supabase
+      .from("accounts")
+      .select("id, nome, saldo_inicial, ativa")
+      .eq("user_id", userId),
+    supabase
+      .from("credit_cards")
+      .select("id, nome, ativo")
+      .eq("user_id", userId),
+    supabase
+      .from("categories")
+      .select("id, nome, cor"),
+    // Busca todas as transações efetivadas para consistência com a página de Contas
     supabase
       .from("transactions")
-      .select("tipo, valor, categoria_id")
+      .select("id, tipo, valor, data, categoria_id, conta_id, account_id, conta_destino_id, cartao_id, forma_pagamento, status")
       .eq("user_id", userId)
-      .gte("data", toISODate(mesAtualInicio))
-      .lt("data", toISODate(mesAtualFim))
       .eq("status", "efetivada"),
     supabase
       .from("transactions")
-      .select("tipo, valor")
-      .eq("user_id", userId)
-      .gte("data", toISODate(mesAnteriorInicio))
-      .lt("data", toISODate(mesAtualInicio))
-      .eq("status", "efetivada"),
-    supabase
-      .from("transactions")
-      .select("id, descricao, valor, tipo, data, categoria_id, conta_id, cartao_id, forma_pagamento")
+      .select("id, descricao, valor, tipo, data, categoria_id, conta_id, account_id, cartao_id, forma_pagamento")
       .eq("user_id", userId)
       .order("data", { ascending: false })
       .order("created_at", { ascending: false })
-      .limit(6),
+      .limit(8),
     supabase
       .from("budgets")
       .select("valor_limite, categoria_id")
@@ -89,36 +89,85 @@ export async function getDashboardData(
       .select("nome, valor_objetivo, valor_atual, prazo")
       .eq("user_id", userId)
       .eq("concluida", false),
-    // A1 FIX: query única para os últimos 6 meses (substitui loop de 6 queries sequenciais)
+    // Despesas de cartão de crédito não pagas (comprometem o saldo)
     supabase
       .from("transactions")
-      .select("tipo, valor, data")
+      .select("valor")
       .eq("user_id", userId)
-      .gte("data", toISODate(seisAtras))
-      .lt("data", toISODate(mesAtualFim))
+      .eq("tipo", "despesa")
+      .not("cartao_id", "is", null)
       .eq("status", "efetivada"),
+    // Despesas agendadas no mês corrente
+    supabase
+      .from("transactions")
+      .select("valor")
+      .eq("user_id", userId)
+      .eq("tipo", "despesa")
+      .eq("status", "agendada")
+      .gte("data", toISODate(mesAtualInicio))
+      .lt("data", toISODate(mesAtualFim)),
   ]);
 
+  const contasAtivas = (accounts ?? []).filter((a) => a.ativa !== false);
   const accountsMap = new Map((accounts ?? []).map((a) => [a.id, a.nome]));
   const cardsMap = new Map((cards ?? []).map((c) => [c.id, c.nome]));
   const categoriesMap = new Map(
     (categoriesData ?? []).map((c) => [c.id, { nome: c.nome, cor: c.cor || "#8A938F" }])
   );
 
-  // C1 FIX: Saldo = soma dos saldos iniciais das contas ativas
-  // O saldo "em caixa" do mês corrente é saldo_inicial + receitas_históricas - despesas_históricas.
-  // Como não temos acesso fácil a todo o histórico sem outra query, usamos:
-  // saldo_inicial das contas (ponto de partida configurado pelo usuário) + fluxo do mês atual.
-  // Para um saldo 100% preciso precisaríamos de uma coluna saldo_atual calculada via trigger.
-  // Por ora, calculamos: saldo_base + receitas_mês_atual - despesas_mês_atual
-  // (que é o saldo "projetado" do mês, não o absoluto histórico total)
-  const saldoBase = (accounts ?? []).reduce(
-    (sum, a) => sum + Number(a.saldo_inicial ?? 0),
+  // 1. CÁLCULO EXATO DE SALDO ATUAL (Idêntico ao /contas)
+  // Soma de saldo_inicial das contas ativas + saldo acumulado por conta
+  const saldosPorConta = new Map<string, number>();
+  for (const m of todasTransacoesEfetivadas ?? []) {
+    const valor = Number(m.valor);
+    const contaOrigem = (m.conta_id as string | undefined) || (m.account_id as string | undefined);
+    const contaDestino = m.conta_destino_id as string | undefined;
+
+    if (m.tipo === "receita" && contaOrigem) {
+      saldosPorConta.set(contaOrigem, (saldosPorConta.get(contaOrigem) ?? 0) + valor);
+    } else if (m.tipo === "despesa" && contaOrigem) {
+      saldosPorConta.set(contaOrigem, (saldosPorConta.get(contaOrigem) ?? 0) - valor);
+    } else if (m.tipo === "transferencia") {
+      if (contaOrigem) {
+        saldosPorConta.set(contaOrigem, (saldosPorConta.get(contaOrigem) ?? 0) - valor);
+      }
+      if (contaDestino) {
+        saldosPorConta.set(contaDestino, (saldosPorConta.get(contaDestino) ?? 0) + valor);
+      }
+    }
+  }
+
+  const saldoAtual = contasAtivas.reduce(
+    (sum, a) => sum + Number(a.saldo_inicial ?? 0) + (saldosPorConta.get(a.id) ?? 0),
     0
   );
 
-  const somaPorTipo = (rows: { tipo: string; valor: number }[] | null, tipo: string) =>
-    (rows ?? [])
+  // 2. CÁLCULO DE SALDO COMPROMETIDO E DISPONÍVEL
+  const faturaAbertaTotal = (faturasAbertasCartoes ?? []).reduce(
+    (sum, t) => sum + Number(t.valor ?? 0),
+    0
+  );
+  const agendadasMesTotal = (despesasAgendadasMes ?? []).reduce(
+    (sum, t) => sum + Number(t.valor ?? 0),
+    0
+  );
+  const saldoComprometido = faturaAbertaTotal + agendadasMesTotal;
+  const saldoDisponivel = saldoAtual - saldoComprometido;
+
+  // 3. RECEITAS E DESPESAS DO MÊS ATUAL E MÊS ANTERIOR
+  const mesAtualInicioStr = toISODate(mesAtualInicio);
+  const mesAtualFimStr = toISODate(mesAtualFim);
+  const mesAnteriorInicioStr = toISODate(mesAnteriorInicio);
+
+  const transacoesMesAtual = (todasTransacoesEfetivadas ?? []).filter(
+    (t) => t.data >= mesAtualInicioStr && t.data < mesAtualFimStr
+  );
+  const transacoesMesAnterior = (todasTransacoesEfetivadas ?? []).filter(
+    (t) => t.data >= mesAnteriorInicioStr && t.data < mesAtualInicioStr
+  );
+
+  const somaPorTipo = (rows: { tipo: string; valor: number }[], tipo: string) =>
+    rows
       .filter((r) => r.tipo === tipo)
       .reduce((sum, r) => sum + Number(r.valor), 0);
 
@@ -128,11 +177,9 @@ export async function getDashboardData(
   const despesasMesAnterior = somaPorTipo(transacoesMesAnterior, "despesa");
   const economiaMes = receitasMes - despesasMes;
 
-  const saldoAtual = saldoBase + receitasMes - despesasMes;
-  const saldoAnterior = saldoBase + receitasMesAnterior - despesasMesAnterior;
-
+  // 4. GASTOS POR CATEGORIA (MÊS ATUAL)
   const gastosPorCategoriaMap = new Map<string, { valor: number; cor: string }>();
-  (transacoesMesAtual ?? [])
+  transacoesMesAtual
     .filter((t) => t.tipo === "despesa")
     .forEach((t) => {
       const cat = t.categoria_id ? categoriesMap.get(t.categoria_id) : null;
@@ -145,29 +192,107 @@ export async function getDashboardData(
       });
     });
 
-  // A1 FIX: Agrupa o histórico de 6 meses por mês usando JS — sem loop de queries
+  const gastosPorCategoria = Array.from(gastosPorCategoriaMap.entries())
+    .map(([categoria, v]) => ({ categoria, valor: v.valor, cor: v.cor }))
+    .sort((a, b) => b.valor - a.valor);
+
+  // 5. SÉRIES HISTÓRICAS DINÂMICAS POR PERÍODO (7D, 30D, 3M, 6M, 1A)
   const nomesMeses = [
     "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
     "Jul", "Ago", "Set", "Out", "Nov", "Dez",
   ];
 
-  const evolucaoMeses: DashboardData["evolucao"] = [];
-  for (let i = 5; i >= 0; i--) {
+  // Função auxiliar para formato ISO local (YYYY-MM-DD) sem distorção UTC
+  const formatLocalISODate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  // 7 Dias (diário: ex: "28 Ago", "03 Set")
+  const evolucao7D: EvolucaoPoint[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const dStr = formatLocalISODate(d);
+    const label = `${String(d.getDate()).padStart(2, "0")} ${nomesMeses[d.getMonth()]}`;
+    const transDia = (todasTransacoesEfetivadas ?? []).filter((t) => t.data === dStr);
+    evolucao7D.push({
+      mes: label,
+      dataCompleta: dStr,
+      receitas: somaPorTipo(transDia, "receita"),
+      despesas: somaPorTipo(transDia, "despesa"),
+    });
+  }
+
+  // 30 Dias (diário: ex: "05 Ago", "10 Ago")
+  const evolucao30D: EvolucaoPoint[] = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const dStr = formatLocalISODate(d);
+    const label = `${String(d.getDate()).padStart(2, "0")} ${nomesMeses[d.getMonth()]}`;
+    const transDia = (todasTransacoesEfetivadas ?? []).filter((t) => t.data === dStr);
+    evolucao30D.push({
+      mes: label,
+      dataCompleta: dStr,
+      receitas: somaPorTipo(transDia, "receita"),
+      despesas: somaPorTipo(transDia, "despesa"),
+    });
+  }
+
+  // 3 Meses
+  const evolucao3M: EvolucaoPoint[] = [];
+  for (let i = 2; i >= 0; i--) {
     const mesRef = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const anoMes = `${mesRef.getFullYear()}-${String(mesRef.getMonth() + 1).padStart(2, "0")}`;
-    const rows = (historicoEvolucao ?? []).filter((r) => r.data?.startsWith(anoMes));
-    evolucaoMeses.push({
+    const rows = (todasTransacoesEfetivadas ?? []).filter((r) => r.data?.startsWith(anoMes));
+    evolucao3M.push({
       mes: nomesMeses[mesRef.getMonth()],
       receitas: somaPorTipo(rows, "receita"),
       despesas: somaPorTipo(rows, "despesa"),
     });
   }
 
+  // 6 Meses
+  const evolucao6M: EvolucaoPoint[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const mesRef = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const anoMes = `${mesRef.getFullYear()}-${String(mesRef.getMonth() + 1).padStart(2, "0")}`;
+    const rows = (todasTransacoesEfetivadas ?? []).filter((r) => r.data?.startsWith(anoMes));
+    evolucao6M.push({
+      mes: nomesMeses[mesRef.getMonth()],
+      receitas: somaPorTipo(rows, "receita"),
+      despesas: somaPorTipo(rows, "despesa"),
+    });
+  }
+
+  // 1 Ano (12 meses)
+  const evolucao1A: EvolucaoPoint[] = [];
+  for (let i = 11; i >= 0; i--) {
+    const mesRef = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const anoMes = `${mesRef.getFullYear()}-${String(mesRef.getMonth() + 1).padStart(2, "0")}`;
+    const rows = (todasTransacoesEfetivadas ?? []).filter((r) => r.data?.startsWith(anoMes));
+    evolucao1A.push({
+      mes: nomesMeses[mesRef.getMonth()],
+      receitas: somaPorTipo(rows, "receita"),
+      despesas: somaPorTipo(rows, "despesa"),
+    });
+  }
+
+  const evolucaoPorPeriodo: Record<ChartPeriod, EvolucaoPoint[]> = {
+    "7D": evolucao7D,
+    "30D": evolucao30D,
+    "3M": evolucao3M,
+    "6M": evolucao6M,
+    "1A": evolucao1A,
+  };
+
   return {
     summary: {
       saldoAtual,
-      // C2 FIX: null indica "sem comparação válida" — o componente exibe "Primeiro período"
-      saldoVariacaoPct: pctChange(saldoAtual, saldoAnterior),
+      saldoComprometido,
+      saldoDisponivel,
+      saldoVariacaoPct: null, // Evita comparações fictícias de saldo total sem snapshot diário de patrimônio
       receitasMes,
       receitasVariacaoPct: pctChange(receitasMes, receitasMesAnterior),
       despesasMes,
@@ -175,14 +300,14 @@ export async function getDashboardData(
       economiaMes,
       economiaPctRenda: receitasMes > 0 ? (economiaMes / receitasMes) * 100 : 0,
     },
-    evolucao: evolucaoMeses,
-    gastosPorCategoria: Array.from(gastosPorCategoriaMap.entries()).map(
-      ([categoria, v]) => ({ categoria, valor: v.valor, cor: v.cor })
-    ),
+    evolucao: evolucao6M,
+    evolucaoPorPeriodo,
+    gastosPorCategoria,
     transacoesRecentes: (transacoesRecentes ?? []).map((t) => {
       const cat = t.categoria_id ? categoriesMap.get(t.categoria_id) : null;
-      // Suporta tanto conta_id quanto cartao_id nos dados retornados
-      const contaId = (t as Record<string, unknown>).conta_id as string | undefined;
+      const contaId =
+        ((t as Record<string, unknown>).conta_id as string | undefined) ||
+        ((t as Record<string, unknown>).account_id as string | undefined);
       const cartaoId = (t as Record<string, unknown>).cartao_id as string | undefined;
       const formaPagamento = (t as Record<string, unknown>).forma_pagamento as string | undefined;
       const contaOuCartaoNome =
