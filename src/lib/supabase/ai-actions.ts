@@ -113,35 +113,58 @@ export async function askFinancialAI(
     lastGroqError = "A chave `GROQ_API_KEY` não está configurada nas variáveis de ambiente da Vercel.";
     console.warn("[IA]", lastGroqError);
   } else {
-    // Lista curada apenas com modelos oficiais ativos no Groq (sem modelos descontinuados)
+    // Lista inicial de candidatos padrão
     let groqModels = [
       "llama-3.3-70b-versatile",
       "llama-3.1-8b-instant",
+      "llama-3.2-3b-preview",
+      "llama-3.2-1b-preview",
+      "deepseek-r1-distill-llama-70b",
+      "qwen-2.5-32b",
     ];
+
+    let availableIds: string[] = [];
+    let modelsFetchError: string | null = null;
 
     try {
       const modelsRes = await fetch("https://api.groq.com/openai/v1/models", {
         headers: { Authorization: `Bearer ${groqApiKey}` },
-        signal: AbortSignal.timeout(4000),
+        signal: AbortSignal.timeout(6000),
       });
       if (modelsRes.ok) {
         const modelsData = (await modelsRes.json()) as { data?: Array<{ id: string }> };
-        const availableIds = (modelsData.data || []).map((m) => m.id);
-        const validChatModels = availableIds.filter(
+        availableIds = (modelsData.data || []).map((m) => m.id);
+
+        const priorityPreferences = [
+          "llama-3.3-70b-versatile",
+          "llama-3.1-8b-instant",
+          "llama-3.2-3b-preview",
+          "llama-3.2-1b-preview",
+          "deepseek-r1-distill-llama-70b",
+          "qwen-2.5-32b",
+          "mistral-saba-24b",
+        ];
+
+        const matching = priorityPreferences.filter((p) => availableIds.includes(p));
+        const others = availableIds.filter(
           (id) =>
             !id.includes("whisper") &&
             !id.includes("guard") &&
             !id.includes("vision") &&
-            !id.includes("gemma") && // gemma2 foi descontinuado
-            !id.includes("llama3-") && // llama3 legacy foi descontinuado
-            (id.includes("llama-3.3") || id.includes("llama-3.1"))
+            !id.includes("gemma") &&
+            !priorityPreferences.includes(id)
         );
-        if (validChatModels.length > 0) {
-          groqModels = validChatModels;
+
+        const allDiscovered = [...matching, ...others];
+        if (allDiscovered.length > 0) {
+          groqModels = allDiscovered;
         }
+      } else {
+        const errText = await modelsRes.text();
+        modelsFetchError = `GET /models falhou (HTTP ${modelsRes.status}): ${errText}`;
       }
-    } catch {
-      // Continua com a lista padrão em caso de timeout
+    } catch (e) {
+      modelsFetchError = `GET /models erro: ${e instanceof Error ? e.message : String(e)}`;
     }
 
     // Montar histórico estritamente válido para a API da Groq:
@@ -250,7 +273,11 @@ REGRAS:
     }
 
     if (modelErrors.length > 0) {
-      lastGroqError = modelErrors.join(" | ");
+      const extraInfo =
+        availableIds.length > 0
+          ? `Modelos encontrados na sua conta Groq: ${availableIds.join(", ")}`
+          : modelsFetchError || "Não foi possível listar os modelos da conta";
+      lastGroqError = `${modelErrors.join(" | ")} — (${extraInfo})`;
     }
   }
 
