@@ -182,8 +182,9 @@ REGRAS:
           lastGroqError = `Erro HTTP ${groqRes.status} (${groqRes.statusText}) da Groq: ${errBody}`;
           console.error(`[Groq Error ${groqRes.status} no modelo ${modelName}]:`, errBody);
         }
-      } catch (err: any) {
-        lastGroqError = `Falha de conexão com a Groq: ${err?.message || err}`;
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        lastGroqError = `Falha de conexão com a Groq: ${errMsg}`;
         console.warn(`[Groq Falha no modelo ${modelName}]:`, err);
       }
     }
