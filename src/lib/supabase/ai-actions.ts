@@ -113,8 +113,37 @@ export async function askFinancialAI(
     lastGroqError = "A chave `GROQ_API_KEY` não está configurada nas variáveis de ambiente da Vercel.";
     console.warn("[IA]", lastGroqError);
   } else {
-    // Tenta primeiro o modelo versatile e, se falhar (429 rate limit, timeout, etc.), tenta o 8b-instant
-    const groqModels = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+    // Descobre dinamicamente os modelos aos quais esta chave tem acesso na Groq
+    let groqModels = [
+      "llama-3.3-70b-versatile",
+      "llama-3.1-8b-instant",
+      "llama3-8b-8192",
+      "llama3-70b-8192",
+      "gemma2-9b-it",
+    ];
+
+    try {
+      const modelsRes = await fetch("https://api.groq.com/openai/v1/models", {
+        headers: { Authorization: `Bearer ${groqApiKey}` },
+        signal: AbortSignal.timeout(4000),
+      });
+      if (modelsRes.ok) {
+        const modelsData = (await modelsRes.json()) as { data?: Array<{ id: string }> };
+        const availableIds = (modelsData.data || []).map((m) => m.id);
+        const validChatModels = availableIds.filter(
+          (id) =>
+            !id.includes("whisper") &&
+            !id.includes("guard") &&
+            !id.includes("vision") &&
+            (id.includes("llama") || id.includes("gemma") || id.includes("mixtral"))
+        );
+        if (validChatModels.length > 0) {
+          groqModels = validChatModels;
+        }
+      }
+    } catch {
+      // Continua com a lista padrão em caso de timeout
+    }
 
     for (const modelName of groqModels) {
       try {
