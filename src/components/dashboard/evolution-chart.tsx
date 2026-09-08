@@ -9,6 +9,7 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  Legend
 } from "recharts";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
@@ -94,12 +95,12 @@ export function EvolutionChart({ data = [], dataByPeriod }: EvolutionChartProps)
                 tickLine={false}
                 axisLine={false}
                 interval={xAxisInterval}
-                tick={{ fill: "#94a3b8", fontSize: 11 }}
+                tick={{ fill: "#cbd5e1", fontSize: 11 }}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fill: "#94a3b8", fontSize: 11 }}
+                tick={{ fill: "#cbd5e1", fontSize: 11 }}
                 tickFormatter={(v) => {
                   if (v === 0) return "R$ 0";
                   if (Math.abs(v) >= 1000) return `${(v / 1000).toFixed(0)}k`;
@@ -107,7 +108,7 @@ export function EvolutionChart({ data = [], dataByPeriod }: EvolutionChartProps)
                 }}
               />
               <Tooltip
-                formatter={(value) => [formatCurrency(Number(value)), ""]}
+                formatter={(value: any, name: any) => [formatCurrency(Number(value)), name]}
                 labelFormatter={(label) => `Período: ${label}`}
                 contentStyle={{
                   backgroundColor: "rgba(24, 30, 27, 0.95)",
@@ -119,6 +120,7 @@ export function EvolutionChart({ data = [], dataByPeriod }: EvolutionChartProps)
                   boxShadow: "0 8px 20px rgba(0, 0, 0, 0.4)",
                 }}
               />
+              <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: 12, color: "#cbd5e1" }} />
               <Area
                 type="monotone"
                 dataKey="receitas"

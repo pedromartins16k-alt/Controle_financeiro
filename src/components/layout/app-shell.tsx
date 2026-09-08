@@ -32,7 +32,7 @@ export function AppShell({
 
   return (
     <TransactionModalProvider>
-      <div className="relative flex min-h-screen bg-paper overflow-x-hidden selection:bg-brand/30 selection:text-brand-strong">
+      <div className="relative flex h-[100dvh] w-full bg-paper overflow-hidden selection:bg-brand/30 selection:text-brand-strong">
         <AmbientMeshCanvas />
         {/* Menu Lateral Desktop e Gaveta Mobile */}
         <Sidebar
@@ -40,13 +40,13 @@ export function AppShell({
           onMobileClose={() => setMobileMenuOpen(false)}
         />
 
-        <div className="relative z-10 flex min-w-0 flex-1 flex-col">
+        <div className="relative z-10 flex min-w-0 flex-1 flex-col h-full overflow-hidden">
           <Topbar
             userName={userName}
             onMenuClick={() => setMobileMenuOpen(true)}
             onSearchClick={() => setSearchOpen(true)}
           />
-          <main className="flex-1 px-3.5 pb-16 pt-4 md:px-8 md:pb-10 md:pt-6">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden px-3.5 pb-16 pt-4 md:px-8 md:pb-10 md:pt-6">
             {children}
           </main>
         </div>

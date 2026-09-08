@@ -9,13 +9,7 @@ import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { BudgetsPreview, GoalsPreview } from "@/components/dashboard/budgets-goals";
 import { FinancialInsights } from "@/components/dashboard/financial-insights";
 import { Wallet, ArrowRight } from "lucide-react";
-
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return "Bom dia";
-  if (hour >= 12 && hour < 18) return "Boa tarde";
-  return "Boa noite";
-}
+import { GreetingText } from "@/components/greeting-text";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -37,19 +31,18 @@ export default async function DashboardPage() {
 
   const userName = profile?.nome || user.email?.split("@")[0] || "Usuário";
   const data = await getDashboardData(supabase, user.id);
-  const greeting = getGreeting();
 
   const isUsuarioSemDados =
     !data.temContas && data.transacoesRecentes.length === 0;
 
   return (
     <AppShell userName={userName}>
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6 md:gap-8 pb-8">
         {/* 1. Saudação Objetiva e Contexto */}
         <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
           <div>
             <h1 className="font-display text-xl font-bold tracking-tight text-text-primary md:text-2xl">
-              {greeting}, {userName} 👋
+              <GreetingText userName={userName} /> 👋
             </h1>
             <p className="text-xs text-text-muted md:text-sm">
               Veja como estão suas finanças e acompanhe seus resultados.

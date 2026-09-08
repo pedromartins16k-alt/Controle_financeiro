@@ -4,15 +4,8 @@ import { Bell, Plus, Menu, Search } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useTransactionModal } from "@/components/transactions/transaction-modal-context";
-
-const GREETINGS = ["Bom dia", "Boa tarde", "Boa noite"];
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return GREETINGS[0];
-  if (hour < 18) return GREETINGS[1];
-  return GREETINGS[2];
-}
+import { formatCurrentDate } from "@/lib/utils";
+import { GreetingText } from "@/components/greeting-text";
 
 interface TopbarProps {
   userName: string;
@@ -22,11 +15,7 @@ interface TopbarProps {
 
 export function Topbar({ userName, onMenuClick, onSearchClick }: TopbarProps) {
   const { open } = useTransactionModal();
-  const today = new Intl.DateTimeFormat("pt-BR", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(new Date());
+  const today = formatCurrentDate();
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-white/[0.08] bg-[#0a0f0d]/75 px-3.5 backdrop-blur-xl md:h-16 md:px-8">
@@ -42,7 +31,7 @@ export function Topbar({ userName, onMenuClick, onSearchClick }: TopbarProps) {
 
         <div className="min-w-0">
           <p className="truncate text-xs font-semibold text-text-primary md:text-sm">
-            {getGreeting()}, {userName}
+            <GreetingText userName={userName} />
           </p>
           <p className="truncate text-[10px] capitalize text-text-muted md:text-xs">{today}</p>
         </div>

@@ -41,13 +41,13 @@ export function ThemeToggle() {
           title={label}
           onClick={() => setTheme(value)}
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+            "flex h-7 w-7 items-center justify-center rounded-full transition-colors",
             theme === value
-              ? "bg-brand text-paper-raised"
+              ? "bg-white/10 text-text-primary dark:bg-white/15 shadow-sm"
               : "text-text-muted hover:text-text-primary"
           )}
         >
-          <Icon className="h-4 w-4" strokeWidth={2} />
+          <Icon className="h-3.5 w-3.5" strokeWidth={2} />
         </button>
       ))}
     </div>

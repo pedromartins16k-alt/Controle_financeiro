@@ -47,6 +47,13 @@ function Delta({
 }
 
 export function SummaryCards({ data }: { data: DashboardSummary }) {
+  const getVariationText = (pct: number | null) => {
+    if (pct === null) return "Ainda não há histórico suficiente para comparação";
+    const positive = pct >= 0;
+    const value = Math.abs(pct).toFixed(1);
+    return positive ? `↑ ${value}% maior que o mês anterior` : `↓ ${value}% menor que o mês anterior`;
+  };
+
   return (
     <div className="space-y-4">
       {/* 1. Bloco de Saldo: Atual, Comprometido e Disponível */}
@@ -72,7 +79,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
               {formatCurrency(data.saldoAtual)}
             </p>
             <p className="mt-0.5 text-[11px] text-text-muted">
-              Disponível em contas bancárias cadastradas
+              Dinheiro efetivamente disponível nas contas
             </p>
           </CardContent>
         </Card>
@@ -85,7 +92,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
             </CardTitle>
             <span className="inline-flex items-center gap-1 text-[11px] text-amber-500 font-medium">
               <CreditCard className="h-3.5 w-3.5" />
-              Faturas e agendadas
+              Faturas e pagamentos agendados
             </span>
           </CardHeader>
           <CardContent>
@@ -94,13 +101,13 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
             </p>
             <p className="mt-0.5 text-[11px] text-text-muted">
               {data.saldoComprometido > 0
-                ? "Compromissos pendentes no período"
+                ? "Compromissos financeiros futuros no período"
                 : "Nenhum compromisso pendente"}
             </p>
           </CardContent>
         </Card>
 
-        {/* Saldo Disponível Real */}
+        {/* Saldo Livre Real */}
         <Card className="p-4 md:p-5 border-emerald-500/20 bg-emerald-500/[0.03] dark:bg-emerald-950/20">
           <CardHeader className="mb-2 flex items-center justify-between">
             <CardTitle className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
@@ -108,7 +115,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
             </CardTitle>
             <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
               <Lock className="h-3 w-3" />
-              Livre de dívidas
+              Livre de compromissos
             </span>
           </CardHeader>
           <CardContent>
@@ -117,13 +124,13 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
                 "pb-1 font-display text-2xl font-bold tabular-data md:text-3xl",
                 data.saldoDisponivel >= 0
                   ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-rose-600 dark:text-rose-400"
+                  : "text-rose-500/90 dark:text-rose-400/90"
               )}
             >
               {formatCurrency(data.saldoDisponivel)}
             </p>
             <p className="mt-0.5 text-[11px] text-text-muted">
-              Saldo após quitar cartões e pendências do mês
+              Cálculo: Saldo disponível - Compromissos pendentes
             </p>
           </CardContent>
         </Card>
@@ -144,7 +151,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
               {formatCurrency(data.receitasMes)}
             </p>
             <p className="mt-0.5 text-[11px] text-text-muted">
-              {data.receitasVariacaoPct !== null ? "vs. mês anterior" : "Primeiro período registrado"}
+              {getVariationText(data.receitasVariacaoPct)}
             </p>
           </CardContent>
         </Card>
@@ -162,7 +169,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
               {formatCurrency(data.despesasMes)}
             </p>
             <p className="mt-0.5 text-[11px] text-text-muted">
-              {data.despesasVariacaoPct !== null ? "vs. mês anterior" : "Primeiro período registrado"}
+              {getVariationText(data.despesasVariacaoPct)}
             </p>
           </CardContent>
         </Card>
@@ -182,7 +189,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
                     : "text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20"
                 )}
               >
-                {data.economiaPctRenda.toFixed(0)}% da renda
+                Taxa de economia: {data.economiaPctRenda.toFixed(0)}%
               </span>
             )}
           </CardHeader>
