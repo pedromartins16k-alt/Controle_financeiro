@@ -75,7 +75,32 @@ export default async function TransacoesPage({ searchParams }: TransacoesPagePro
 
   // Filtros Básicos
   if (tipo) query = query.eq("tipo", tipo);
-  if (q) query = query.ilike("descricao", `%${q}%`);
+  
+  // Se houver busca 'q', encontra categorias ou contas/cartões correspondentes para busca ampla
+  if (q) {
+    const qLower = q.toLowerCase();
+    const matchingCatIds = (categories ?? [])
+      .filter((c) => c.nome.toLowerCase().includes(qLower))
+      .map((c) => c.id);
+    const matchingAccIds = (accounts ?? [])
+      .filter((a) => a.nome.toLowerCase().includes(qLower))
+      .map((a) => a.id);
+    const matchingCardIds = (cards ?? [])
+      .filter((c) => c.nome.toLowerCase().includes(qLower))
+      .map((c) => c.id);
+
+    const conditions: string[] = [`descricao.ilike.%${q}%`];
+    if (matchingCatIds.length > 0) {
+      conditions.push(`categoria_id.in.(${matchingCatIds.join(",")})`);
+    }
+    if (matchingAccIds.length > 0) {
+      conditions.push(`conta_id.in.(${matchingAccIds.join(",")})`);
+    }
+    if (matchingCardIds.length > 0) {
+      conditions.push(`cartao_id.in.(${matchingCardIds.join(",")})`);
+    }
+    query = query.or(conditions.join(","));
+  }
 
   // Filtros Avançados
   if (status) query = query.eq("status", status);

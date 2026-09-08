@@ -36,6 +36,8 @@ export function TransactionsFilters({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [modalOpen, setModalOpen] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState(q);
+  const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Calcula quantidade de filtros ativos (além da busca de texto e tipo padrão)
   const activeFiltersCount = React.useMemo(() => {
@@ -61,6 +63,53 @@ export function TransactionsFilters({
     const params = new URLSearchParams(searchParams.toString());
     params.delete(key);
     router.push(`/transacoes?${params.toString()}`);
+  };
+
+  // Sincroniza estado local caso a URL mude externamente
+  React.useEffect(() => {
+    setSearchTerm(q);
+  }, [q]);
+
+  const applySearch = React.useCallback(
+    (newQuery: string) => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      const params = new URLSearchParams(searchParams.toString());
+      const trimmed = newQuery.trim();
+      if (trimmed) {
+        params.set("q", trimmed);
+      } else {
+        params.delete("q");
+      }
+      router.push(`/transacoes?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      applySearch(value);
+    }, 400);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      applySearch(searchTerm);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm("");
+    applySearch("");
   };
 
   return (
@@ -93,22 +142,32 @@ export function TransactionsFilters({
           </div>
         </div>
 
-        {/* Campo de Busca + Botão Filtros Avançados */}
+        {/* Campo de Busca Inteligente com Debounce + Botão Filtros Avançados */}
         <div className="flex items-center gap-2">
-          <form action="/transacoes" method="get" className="relative flex-1 sm:w-64">
-            {Array.from(searchParams.entries()).map(([k, v]) => {
-              if (k === "q") return null;
-              return <input key={k} type="hidden" name={k} value={v} />;
-            })}
+          <div className="relative flex-1 sm:w-80">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
             <input
-              type="search"
+              type="text"
               name="q"
-              defaultValue={q}
-              placeholder="Buscar transação..."
-              className="h-10 w-full rounded-full border border-border-strong bg-paper-raised pl-9 pr-3 text-sm text-text-primary outline-none focus:border-brand"
+              value={searchTerm}
+              onChange={handleSearchChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Busque por nome, categoria ou conta"
+              aria-label="Buscar transações por nome, categoria ou conta"
+              className="h-10 w-full rounded-full border border-border-strong bg-paper-raised pl-9 pr-8 text-xs sm:text-sm text-text-primary outline-none focus:border-brand focus:ring-1 focus:ring-brand/30 transition-all placeholder:text-text-muted"
             />
-          </form>
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                title="Limpar busca"
+                aria-label="Limpar termo de busca"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-text-muted hover:text-text-primary hover:bg-white/10 transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
 
           <Button
             type="button"
