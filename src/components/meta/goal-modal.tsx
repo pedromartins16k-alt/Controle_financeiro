@@ -30,7 +30,6 @@ export function GoalModal({ isOpen, onClose, editingGoal }: GoalModalProps) {
   );
 
   const [nome, setNome] = useState("");
-  const [descricao, setDescricao] = useState("");
   const [valorObjetivo, setValorObjetivo] = useState("");
   const [valorAtual, setValorAtual] = useState("0");
   const [prazo, setPrazo] = useState("");
@@ -39,14 +38,12 @@ export function GoalModal({ isOpen, onClose, editingGoal }: GoalModalProps) {
   useEffect(() => {
     if (editingGoal) {
       setNome(editingGoal.nome);
-      setDescricao(editingGoal.descricao || "");
       setValorObjetivo(editingGoal.valorObjetivo.toString());
       setValorAtual(editingGoal.valorAtual.toString());
       setPrazo(editingGoal.prazo || "");
       setCor(editingGoal.cor || CORES[0]);
     } else {
       setNome("");
-      setDescricao("");
       setValorObjetivo("");
       setValorAtual("0");
       setPrazo("");
@@ -169,19 +166,6 @@ export function GoalModal({ isOpen, onClose, editingGoal }: GoalModalProps) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-text-secondary uppercase">
-              Observação / Descrição
-            </label>
-            <textarea
-              name="descricao"
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Alguma nota sobre a meta..."
-              rows={2}
-              className="mt-1.5 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-text-primary outline-none focus:border-brand"
-            />
-          </div>
 
           <div className="mt-6 flex justify-end gap-3 pt-2">
             <Button

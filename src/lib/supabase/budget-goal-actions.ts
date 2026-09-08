@@ -116,19 +116,37 @@ export async function createGoal(
     return { error: "Informe um valor objetivo válido maior que zero." };
   }
 
-  const { error } = await supabase.from("goals").insert({
+  const payload: Record<string, unknown> = {
     user_id: user.id,
     nome,
-    descricao,
     valor_objetivo: valorObjetivo,
     valor_atual: Number.isFinite(valorAtual) ? valorAtual : 0,
     prazo,
     cor,
     icone,
-  });
+  };
+
+  const { error } = await supabase.from("goals").insert(payload);
 
   if (error) {
     console.error("Erro ao criar meta:", error);
+    // Se der erro de coluna inexistente no schema do Supabase, tenta inserir apenas os campos essenciais
+    if (error.message && (error.message.includes("column") || error.code === "PGRST204" || error.code === "42703")) {
+      const minimalPayload = {
+        user_id: user.id,
+        nome,
+        valor_objetivo: valorObjetivo,
+        valor_atual: Number.isFinite(valorAtual) ? valorAtual : 0,
+        prazo: prazo || null,
+      };
+      const retry = await supabase.from("goals").insert(minimalPayload);
+      if (!retry.error) {
+        revalidatePath("/");
+        revalidatePath("/metas");
+        return { success: true };
+      }
+      return { error: retry.error.message || "Não foi possível criar a meta." };
+    }
     return { error: error.message || "Não foi possível criar a meta. Tente novamente." };
   }
 
@@ -150,7 +168,6 @@ export async function updateGoal(
 
   const id = String(formData.get("id") || "").trim();
   const nome = String(formData.get("nome") || "").trim();
-  const descricao = String(formData.get("descricao") || "").trim() || null;
   const valorObjetivoRaw = String(formData.get("valor_objetivo") || "");
   const valorAtualRaw = String(formData.get("valor_atual") || "0");
   const prazo = String(formData.get("prazo") || "").trim() || null;
@@ -167,22 +184,45 @@ export async function updateGoal(
     return { error: "Informe um valor objetivo válido maior que zero." };
   }
 
+  const payload: Record<string, unknown> = {
+    nome,
+    valor_objetivo: valorObjetivo,
+    valor_atual: Number.isFinite(valorAtual) ? valorAtual : 0,
+    prazo,
+    cor,
+    icone,
+    concluida,
+  };
+
   const { error } = await supabase
     .from("goals")
-    .update({
-      nome,
-      descricao,
-      valor_objetivo: valorObjetivo,
-      valor_atual: Number.isFinite(valorAtual) ? valorAtual : 0,
-      prazo,
-      cor,
-      icone,
-      concluida,
-    })
+    .update(payload)
     .eq("id", id)
     .eq("user_id", user.id);
 
-  if (error) return { error: "Não foi possível atualizar a meta." };
+  if (error) {
+    if (error.message && (error.message.includes("column") || error.code === "PGRST204" || error.code === "42703")) {
+      const minimalUpdate = {
+        nome,
+        valor_objetivo: valorObjetivo,
+        valor_atual: Number.isFinite(valorAtual) ? valorAtual : 0,
+        prazo: prazo || null,
+        concluida,
+      };
+      const retry = await supabase
+        .from("goals")
+        .update(minimalUpdate)
+        .eq("id", id)
+        .eq("user_id", user.id);
+      if (!retry.error) {
+        revalidatePath("/");
+        revalidatePath("/metas");
+        return { success: true };
+      }
+      return { error: retry.error.message || "Não foi possível atualizar a meta." };
+    }
+    return { error: error.message || "Não foi possível atualizar a meta." };
+  }
 
   revalidatePath("/");
   revalidatePath("/metas");
