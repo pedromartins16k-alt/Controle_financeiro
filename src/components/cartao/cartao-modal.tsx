@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useActionState } from "react";
@@ -56,7 +56,7 @@ export function CardModal({
         aria-modal="true"
         aria-labelledby="card-modal-titulo"
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-xl bg-paper-raised p-6 shadow-xl sm:rounded-xl"
+        className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-xl bg-paper-raised p-6 shadow-xl sm:rounded-xl border border-border"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 id="card-modal-titulo" className="font-display text-xl font-medium text-text-primary">
@@ -92,7 +92,7 @@ export function CardModal({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label htmlFor="banco" className="mb-1.5 block text-sm font-medium text-text-primary">
                 Banco / Emissor
@@ -143,7 +143,7 @@ export function CardModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label htmlFor="dia_fechamento" className="mb-1.5 block text-sm font-medium text-text-primary">
                 Dia de fechamento

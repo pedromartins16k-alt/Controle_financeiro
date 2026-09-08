@@ -26,7 +26,7 @@ const INITIAL_SUGGESTIONS = [
 
 function FormattedMessage({ content }: { content: string }) {
   const parseLine = (text: string) => {
-    const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g);
+    const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\)|`[^`]+`)/g);
     return parts.map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
         return (
@@ -35,13 +35,20 @@ function FormattedMessage({ content }: { content: string }) {
           </strong>
         );
       }
+      if (part.startsWith("`") && part.endsWith("`")) {
+        return (
+          <code key={i} className="rounded bg-paper px-1.5 py-0.5 font-mono text-xs text-brand border border-border">
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
       const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
       if (linkMatch) {
         return (
           <a
             key={i}
             href={linkMatch[2]}
-            className="text-brand hover:underline font-medium"
+            className="text-brand hover:underline font-medium break-all"
           >
             {linkMatch[1]}
           </a>
@@ -51,14 +58,33 @@ function FormattedMessage({ content }: { content: string }) {
     });
   };
 
+  const lines = content.split("\n");
+
   return (
-    <div className="whitespace-pre-wrap">
-      {content.split("\n").map((line, idx) => (
-        <span key={idx}>
-          {parseLine(line)}
-          {idx < content.split("\n").length - 1 && "\n"}
-        </span>
-      ))}
+    <div className="space-y-1.5 text-xs sm:text-sm leading-relaxed break-words [overflow-wrap:anywhere]">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        // Item de lista
+        if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || /^\d+\.\s/.test(trimmed)) {
+          const isBullet = trimmed.startsWith("- ") || trimmed.startsWith("* ");
+          const marker = isBullet ? "•" : trimmed.match(/^\d+\./)?.[0];
+          const textWithoutMarker = trimmed.replace(/^([-*]|\d+\.)\s+/, "");
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-1 py-0.5">
+              <span className="font-semibold text-brand select-none shrink-0">{marker}</span>
+              <div className="flex-1 min-w-0">{parseLine(textWithoutMarker)}</div>
+            </div>
+          );
+        }
+        if (!trimmed) {
+          return <div key={idx} className="h-1" />;
+        }
+        return (
+          <p key={idx} className="min-w-0">
+            {parseLine(line)}
+          </p>
+        );
+      })}
     </div>
   );
 }
@@ -283,7 +309,7 @@ export function AiChatView({ userName }: { userName: string }) {
         </div>
 
         {/* Input Form */}
-        <div className="border-t border-border bg-paper p-3 sm:p-4">
+        <div className="border-t border-border bg-paper p-2.5 sm:p-4">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -295,15 +321,16 @@ export function AiChatView({ userName }: { userName: string }) {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Pergunte sobre seus gastos, metas, orçamentos ou como economizar..."
+              placeholder="Pergunte sobre seus gastos, metas ou orçamentos..."
               disabled={loading}
-              className="flex-1 rounded-full border border-border-strong bg-paper-raised px-4 py-2.5 text-sm text-text-primary outline-none focus:border-brand disabled:opacity-50"
+              className="flex-1 min-w-0 rounded-full border border-border-strong bg-paper-raised px-3.5 sm:px-4 py-2 text-xs sm:text-sm text-text-primary outline-none focus:border-brand disabled:opacity-50"
             />
             <Button
               type="submit"
               disabled={loading || !input.trim()}
               size="sm"
-              className="h-10 w-10 rounded-full p-0 shrink-0"
+              aria-label="Enviar mensagem para IA"
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full p-0 shrink-0"
             >
               <Send className="h-4 w-4" />
             </Button>

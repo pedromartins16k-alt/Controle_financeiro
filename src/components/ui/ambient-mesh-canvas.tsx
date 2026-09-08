@@ -46,12 +46,14 @@ export function AmbientMeshCanvas() {
 
     let time = 0;
 
+    let isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     const render = () => {
-      time += 0.01;
+      time += isReducedMotion ? 0.002 : 0.01;
       ctx.clearRect(0, 0, width, height);
 
       // Linhas de Ondas Luminosas Verdes (Cyber-Emerald Ambient Waves)
-      const waveCount = 5;
+      const waveCount = isReducedMotion ? 2 : 5;
       for (let w = 0; w < waveCount; w++) {
         ctx.beginPath();
         const baseAlpha = [0.45, 0.35, 0.25, 0.18, 0.12][w];
@@ -78,23 +80,25 @@ export function AmbientMeshCanvas() {
       }
 
       // Partículas com brilho
-      particles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
+      if (!isReducedMotion) {
+        particles.forEach((p) => {
+          p.x += p.vx;
+          p.y += p.vy;
 
-        if (p.x < 0) p.x = width;
-        if (p.x > width) p.x = 0;
-        if (p.y < 0) p.y = height;
-        if (p.y > height) p.y = 0;
+          if (p.x < 0) p.x = width;
+          if (p.x > width) p.x = 0;
+          if (p.y < 0) p.y = height;
+          if (p.y > height) p.y = 0;
 
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius * 1.3, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(52, 211, 153, ${Math.min(1, p.alpha * 1.5)})`;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = "rgba(16, 185, 129, 0.8)";
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      });
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius * 1.3, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(52, 211, 153, ${Math.min(1, p.alpha * 1.5)})`;
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = "rgba(16, 185, 129, 0.8)";
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        });
+      }
 
       animationFrameId = requestAnimationFrame(render);
     };

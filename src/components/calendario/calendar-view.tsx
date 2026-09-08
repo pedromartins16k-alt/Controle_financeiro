@@ -136,16 +136,32 @@ export function CalendarView({ transactions, cards = [] }: CalendarViewProps) {
       </div>
 
       {/* Navegação de Mês */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="font-display text-xl font-bold capitalize text-text-primary">{monthName}</h2>
-          <Button variant="outline" size="sm" onClick={todayMonth} className="text-xs h-8">Hoje</Button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <h2 className="font-display text-lg sm:text-xl font-bold capitalize text-text-primary truncate">
+            {monthName}
+          </h2>
+          <Button variant="outline" size="sm" onClick={todayMonth} className="text-xs h-8 px-2.5 shrink-0">
+            Hoje
+          </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={prevMonth} className="h-8 w-8 p-0">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={prevMonth}
+            aria-label="Mês anterior"
+            className="h-9 w-9 sm:h-8 sm:w-8 p-0"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={nextMonth} className="h-8 w-8 p-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={nextMonth}
+            aria-label="Próximo mês"
+            className="h-9 w-9 sm:h-8 sm:w-8 p-0"
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -164,10 +180,10 @@ export function CalendarView({ transactions, cards = [] }: CalendarViewProps) {
         <div className="mt-2 grid grid-cols-7 gap-1">
           {/* Espaços vazios do início do mês */}
           {Array.from({ length: firstDayIndex }).map((_, i) => (
-            <div key={`empty-${i}`} className="min-h-[85px] rounded-xl bg-paper-raised/30 p-1.5 opacity-40" />
+            <div key={`empty-${i}`} className="min-h-[48px] xs:min-h-[56px] sm:min-h-[95px] rounded-lg sm:rounded-xl bg-paper-raised/20 p-1 sm:p-1.5 opacity-30" />
           ))}
 
-          {/* Dias do mês */}
+          {/* Células dos dias */}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const dayNumber = i + 1;
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
@@ -176,14 +192,24 @@ export function CalendarView({ transactions, cards = [] }: CalendarViewProps) {
             const isSelected = selectedDay === dateStr;
 
             const cardEvents = cardEventsByDay[dayNumber];
+            const hasActivity = dayData && (dayData.receitas > 0 || dayData.despesas > 0 || dayData.agendadas > 0);
 
             return (
               <div
                 key={dateStr}
                 onClick={() => setSelectedDay(dateStr)}
-                className={`min-h-[85px] sm:min-h-[95px] cursor-pointer rounded-xl border p-1.5 sm:p-2 transition-all flex flex-col justify-between ${
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedDay(dateStr);
+                  }
+                }}
+                aria-label={`Dia ${dayNumber} de ${monthName}`}
+                className={`min-h-[48px] xs:min-h-[56px] sm:min-h-[95px] cursor-pointer rounded-lg sm:rounded-xl border p-1 sm:p-2 transition-all flex flex-col justify-between select-none ${
                   isSelected
-                    ? "border-brand bg-brand/10 shadow-sm"
+                    ? "border-brand bg-brand/15 shadow-sm ring-1 ring-brand/40"
                     : isToday
                     ? "border-brand-soft bg-paper-raised"
                     : "border-border/60 bg-paper/60 hover:border-border hover:bg-paper-raised/70"
@@ -193,9 +219,9 @@ export function CalendarView({ transactions, cards = [] }: CalendarViewProps) {
                   <span
                     className={`flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full text-[11px] sm:text-xs font-bold ${
                       isToday
-                        ? "bg-brand text-paper-raised"
+                        ? "bg-brand text-paper-raised shadow-xs"
                         : isSelected
-                        ? "text-brand"
+                        ? "text-brand font-extrabold"
                         : "text-text-primary"
                     }`}
                   >
@@ -206,27 +232,40 @@ export function CalendarView({ transactions, cards = [] }: CalendarViewProps) {
                   {cardEvents && cardEvents.vencimentos.length > 0 && (
                     <span
                       title={`Vencimento fatura: ${cardEvents.vencimentos.map(c => c.nome).join(", ")}`}
-                      className="flex h-4 w-4 items-center justify-center rounded bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                      className="flex h-3.5 w-3.5 sm:h-4 sm:w-4 items-center justify-center rounded bg-amber-500/20 text-amber-600 dark:text-amber-400"
                     >
-                      <CreditCard className="h-2.5 w-2.5" />
+                      <CreditCard className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
                     </span>
                   )}
                 </div>
 
-                {/* Movimentações do Dia */}
-                <div className="space-y-0.5 mt-1">
+                {/* Mobile: Indicadores compactos (pontinhos) */}
+                <div className="flex sm:hidden items-center justify-center gap-1 mt-0.5 min-h-[6px]">
                   {dayData && dayData.receitas > 0 && (
-                    <div className="truncate text-[10px] sm:text-[11px] font-semibold tabular-data text-income">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" title="Receita" />
+                  )}
+                  {dayData && dayData.despesas > 0 && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-rose-500" title="Despesa" />
+                  )}
+                  {dayData && dayData.agendadas > 0 && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" title="Agendada" />
+                  )}
+                </div>
+
+                {/* Desktop: Movimentações detalhadas com valores */}
+                <div className="hidden sm:block space-y-0.5 mt-1">
+                  {dayData && dayData.receitas > 0 && (
+                    <div className="truncate text-[11px] font-semibold tabular-data text-income">
                       +{formatCurrency(dayData.receitas)}
                     </div>
                   )}
                   {dayData && dayData.despesas > 0 && (
-                    <div className="truncate text-[10px] sm:text-[11px] font-semibold tabular-data text-expense">
+                    <div className="truncate text-[11px] font-semibold tabular-data text-expense">
                       -{formatCurrency(dayData.despesas)}
                     </div>
                   )}
                   {dayData && dayData.agendadas > 0 && (
-                    <div className="truncate text-[9px] sm:text-[10px] font-medium tabular-data text-amber-500">
+                    <div className="truncate text-[10px] font-medium tabular-data text-amber-500">
                       ~{formatCurrency(dayData.agendadas)}
                     </div>
                   )}
