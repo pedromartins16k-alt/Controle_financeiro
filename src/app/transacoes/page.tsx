@@ -122,21 +122,54 @@ export default async function TransacoesPage({ searchParams }: TransacoesPagePro
     };
   });
 
+  // Totais rápidos da busca/filtro atual
+  const totalReceitasFiltradas = transacoes
+    .filter((t) => t.tipo === "receita")
+    .reduce((acc, t) => acc + t.valor, 0);
+
+  const totalDespesasFiltradas = transacoes
+    .filter((t) => t.tipo === "despesa")
+    .reduce((acc, t) => acc + t.valor, 0);
+
+  const saldoLiquidoFiltrado = totalReceitasFiltradas - totalDespesasFiltradas;
+
   return (
     <AppShell userName={userName}>
       <div className="space-y-5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="font-display text-2xl font-medium text-text-primary">
-              Transações
+            <h1 className="font-display text-2xl font-bold tracking-tight text-text-primary">
+              Transações & Extrato
             </h1>
-            <p className="text-sm text-text-secondary">
+            <p className="text-xs text-text-secondary md:text-sm">
               {transacoes.length}{" "}
-              {transacoes.length === 1 ? "transação encontrada" : "transações encontradas"}
+              {transacoes.length === 1 ? "movimentação encontrada" : "movimentações encontradas"} no período
             </p>
           </div>
-          <div className="hidden sm:block">
+          <div className="flex items-center gap-2">
             <NewTransactionButton />
+          </div>
+        </div>
+
+        {/* Resumo Rápido da Busca Filtrada */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-xl border border-white/[0.08] bg-[#0c1310]/70 p-3.5 backdrop-blur-md">
+            <p className="text-[11px] font-medium text-text-muted uppercase tracking-wider">Entradas Filtradas</p>
+            <p className="text-lg font-bold tabular-data text-emerald-400 mt-0.5">
+              + {formatCurrency(totalReceitasFiltradas)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/[0.08] bg-[#0c1310]/70 p-3.5 backdrop-blur-md">
+            <p className="text-[11px] font-medium text-text-muted uppercase tracking-wider">Saídas Filtradas</p>
+            <p className="text-lg font-bold tabular-data text-rose-400 mt-0.5">
+              - {formatCurrency(totalDespesasFiltradas)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/[0.08] bg-[#0c1310]/70 p-3.5 backdrop-blur-md">
+            <p className="text-[11px] font-medium text-text-muted uppercase tracking-wider">Balanço do Filtro</p>
+            <p className={`text-lg font-bold tabular-data mt-0.5 ${saldoLiquidoFiltrado >= 0 ? "text-text-primary" : "text-rose-400"}`}>
+              {formatCurrency(saldoLiquidoFiltrado)}
+            </p>
           </div>
         </div>
 

@@ -119,29 +119,35 @@ export function AdvancedFiltersModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md animate-in fade-in duration-150">
       <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-lg max-h-[calc(100dvh-32px)] overflow-hidden rounded-2xl border border-border-strong bg-paper shadow-2xl transition-all flex flex-col">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d1411] shadow-[0_24px_50px_-12px_rgba(0,0,0,0.8)] transition-all">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-brand" />
-            <h2 className="font-display text-lg font-semibold text-text-primary">
-              Filtros Avançados
-            </h2>
+        <div className="flex items-center justify-between border-b border-white/[0.08] bg-black/20 px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <Filter className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="font-display text-base font-bold text-text-primary">
+                Filtros Avançados
+              </h2>
+              <p className="text-xs text-text-secondary">Refine seu extrato por múltiplos parâmetros</p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-text-muted hover:bg-paper-raised hover:text-text-primary"
+            aria-label="Fechar"
+            className="rounded-lg p-1.5 text-text-secondary hover:bg-white/[0.08] hover:text-text-primary transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 space-y-4 overflow-y-auto p-5 text-sm">
+        <div className="max-h-[75vh] space-y-4 overflow-y-auto p-5 text-sm">
           {/* Status & Tipo */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                 Tipo
@@ -179,7 +185,7 @@ export function AdvancedFiltersModal({
             <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
               Intervalo de Datas
             </label>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3">
               <input
                 type="date"
                 value={dataInicio}
@@ -200,7 +206,7 @@ export function AdvancedFiltersModal({
             <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
               Faixa de Valor (R$)
             </label>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3">
               <input
                 type="number"
                 placeholder="Mínimo (ex: 50)"
@@ -238,7 +244,7 @@ export function AdvancedFiltersModal({
           </div>
 
           {/* Conta e Cartão */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                 Conta Bancária
@@ -299,13 +305,13 @@ export function AdvancedFiltersModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between border-t border-border bg-paper-raised/40 px-5 py-3.5">
+        <div className="flex items-center justify-between border-t border-white/[0.08] bg-black/40 px-5 py-3.5">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={handleReset}
-            className="gap-1.5 text-xs text-text-muted hover:text-text-primary"
+            className="gap-1.5 text-xs text-text-secondary hover:text-text-primary"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             Limpar tudo
@@ -317,7 +323,7 @@ export function AdvancedFiltersModal({
               variant="outline"
               size="sm"
               onClick={onClose}
-              className="text-xs"
+              className="text-xs border-white/10 text-text-secondary hover:text-text-primary hover:bg-white/5"
             >
               Cancelar
             </Button>
@@ -325,7 +331,7 @@ export function AdvancedFiltersModal({
               type="button"
               size="sm"
               onClick={handleApply}
-              className="text-xs"
+              className="text-xs font-bold bg-emerald-400 text-black hover:bg-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.3)]"
             >
               Aplicar Filtros
             </Button>

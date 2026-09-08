@@ -9,7 +9,6 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  Legend
 } from "recharts";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
@@ -37,27 +36,27 @@ export function EvolutionChart({ data = [], dataByPeriod }: EvolutionChartProps)
   const xAxisInterval = period === "30D" ? 4 : 0;
 
   return (
-    <Card className="col-span-1 p-4 xl:col-span-2 md:p-6">
+    <Card className="col-span-1 p-4 xl:col-span-2 md:p-6 border-white/[0.08] bg-paper-raised">
       <CardHeader className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <CardTitle className="text-sm font-semibold text-text-primary md:text-base">
-            Evolução financeira
+          <CardTitle className="text-sm font-bold text-text-primary md:text-base tracking-tight">
+            Evolução Financeira
           </CardTitle>
-          <p className="text-xs text-text-muted mt-0.5">
-            Histórico real de receitas vs. despesas efetivadas
+          <p className="text-xs text-text-secondary mt-0.5">
+            Histórico consolidado de receitas vs. despesas efetivadas
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-1 rounded-lg bg-paper p-1 border border-border">
+        <div className="flex flex-wrap gap-1 rounded-full bg-black/40 p-1 border border-white/[0.08]">
           {PERIODS.map((p) => (
             <button
               key={p.value}
               type="button"
               onClick={() => setPeriod(p.value)}
-              className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-all ${
+              className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-all ${
                 period === p.value
-                  ? "bg-paper-raised text-brand font-semibold shadow-xs border border-border"
-                  : "text-text-muted hover:text-text-primary"
+                  ? "bg-emerald-500/20 text-emerald-400 shadow-xs border border-emerald-500/40 drop-shadow-[0_0_8px_rgba(16,185,129,0.2)]"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               {p.label}
@@ -95,12 +94,12 @@ export function EvolutionChart({ data = [], dataByPeriod }: EvolutionChartProps)
                 tickLine={false}
                 axisLine={false}
                 interval={xAxisInterval}
-                tick={{ fill: "#cbd5e1", fontSize: 11 }}
+                tick={{ fill: "#94a3b8", fontSize: 11 }}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fill: "#cbd5e1", fontSize: 11 }}
+                tick={{ fill: "#94a3b8", fontSize: 11 }}
                 tickFormatter={(v) => {
                   if (v === 0) return "R$ 0";
                   if (Math.abs(v) >= 1000) return `${(v / 1000).toFixed(0)}k`;
@@ -108,7 +107,7 @@ export function EvolutionChart({ data = [], dataByPeriod }: EvolutionChartProps)
                 }}
               />
               <Tooltip
-                formatter={(value: any, name: any) => [formatCurrency(Number(value)), name]}
+                formatter={(value) => [formatCurrency(Number(value)), ""]}
                 labelFormatter={(label) => `Período: ${label}`}
                 contentStyle={{
                   backgroundColor: "rgba(24, 30, 27, 0.95)",
@@ -120,7 +119,6 @@ export function EvolutionChart({ data = [], dataByPeriod }: EvolutionChartProps)
                   boxShadow: "0 8px 20px rgba(0, 0, 0, 0.4)",
                 }}
               />
-              <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: 12, color: "#cbd5e1" }} />
               <Area
                 type="monotone"
                 dataKey="receitas"

@@ -87,22 +87,23 @@ export function TransactionsList({ data }: { data: TransactionRow[] }) {
 
   return (
     <>
-      <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-paper-raised shadow-xs">
+      <ul className="divide-y divide-white/[0.08] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c1310]/85 backdrop-blur-md shadow-lg">
         {data.map((t) => {
           const { sign, tone } = getAmountTone(t.tipo);
           const isExpense = tone === "expense";
-          const isMenuOpen = actionMenuOpenId === t.id;
 
           return (
             <li
               key={t.id}
-              className={`group relative flex flex-col gap-1 border-l-3 px-4 py-3 transition-colors hover:bg-paper/50 sm:flex-row sm:items-center sm:justify-between sm:py-3.5 ${TONE_BORDER[tone]}`}
+              className={`group relative flex items-center justify-between border-l-4 px-4 py-3.5 transition-all hover:bg-white/[0.04] ${TONE_BORDER[tone]}`}
             >
-              <div className="min-w-0">
-                <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-text-primary">
-                  <span className="truncate max-w-[200px] sm:max-w-none">{t.descricao}</span>
+              <div className="min-w-0 pr-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-text-primary tracking-tight">
+                    {t.descricao}
+                  </p>
                   {t.is_recorrente && (
-                    <span className="inline-flex items-center gap-1 rounded-md border border-brand/30 bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand-strong dark:text-brand">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
                       <span>↻</span>
                       <span>
                         {t.intervalo_recorrencia
@@ -112,7 +113,7 @@ export function TransactionsList({ data }: { data: TransactionRow[] }) {
                     </span>
                   )}
                   {t.total_parcelas && t.total_parcelas > 1 && (
-                    <span className="inline-flex items-center gap-1 rounded-md border border-info/30 bg-info-soft px-1.5 py-0.5 text-[10px] font-semibold text-info">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold text-sky-400">
                       <span>Parcela {t.parcela_atual || 1}/{t.total_parcelas}</span>
                       {t.parcela_atual && t.total_parcelas - t.parcela_atual > 0 && (
                         <span className="text-text-muted font-normal">
@@ -121,39 +122,46 @@ export function TransactionsList({ data }: { data: TransactionRow[] }) {
                       )}
                     </span>
                   )}
-                </p>
-                <p className="truncate text-xs text-text-muted mt-0.5">
-                  {t.categoria} • {t.conta} • {formatDate(t.data)}
+                </div>
+                <p className="truncate text-xs text-text-secondary mt-1 flex items-center gap-1.5 flex-wrap">
+                  <span className="font-medium text-text-primary/90">{t.categoria}</span>
+                  <span className="text-white/20">•</span>
+                  <span>{t.conta}</span>
+                  <span className="text-white/20">•</span>
+                  <span className="text-text-muted">{formatDate(t.data)}</span>
                   {t.total_parcelas && t.total_parcelas > 1 && t.parcela_atual && t.total_parcelas - t.parcela_atual > 0 && (
-                    <span> • Restam {formatCurrency(t.valor * (t.total_parcelas - t.parcela_atual))}</span>
+                    <>
+                      <span className="text-white/20">•</span>
+                      <span className="text-amber-400/90 font-medium">Restam {formatCurrency(t.valor * (t.total_parcelas - t.parcela_atual))}</span>
+                    </>
                   )}
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2 sm:pl-2">
+              <div className="flex shrink-0 items-center gap-3 pl-2">
                 <span
-                  className={`text-sm font-bold tabular-data ${
+                  className={`text-sm font-bold tabular-data md:text-base ${
                     isExpense
-                      ? "text-rose-600 dark:text-rose-400"
+                      ? "text-rose-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.25)]"
                       : t.tipo === "transferencia"
-                      ? "text-sky-600 dark:text-sky-400"
-                      : "text-emerald-600 dark:text-emerald-400"
+                      ? "text-sky-400"
+                      : "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.25)]"
                   }`}
                 >
                   {sign} {formatCurrency(t.valor)}
                 </span>
 
-                {/* Botões de Ação */}
-                <div className="flex items-center gap-1">
+                {/* Botões de Ação Diretos com alto contraste e área de clique otimizada */}
+                <div className="flex items-center gap-1.5">
                   {/* Botão Editar */}
                   <button
                     type="button"
                     onClick={() => openEdit(t)}
-                    title="Editar transação"
+                    title="Editar movimentação"
                     aria-label={`Editar ${t.descricao}`}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-paper hover:text-brand"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-text-secondary transition-all hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:text-emerald-400"
                   >
-                    <Edit3 className="h-3.5 w-3.5" strokeWidth={2} />
+                    <Edit3 className="h-3.5 w-3.5" strokeWidth={2.2} />
                   </button>
 
                   {/* Botão Excluir */}
@@ -171,11 +179,11 @@ export function TransactionsList({ data }: { data: TransactionRow[] }) {
                       })
                     }
                     disabled={pendingId === t.id}
-                    title="Excluir transação"
+                    title="Excluir movimentação"
                     aria-label={`Excluir ${t.descricao}`}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-rose-500/15 hover:text-rose-600 dark:hover:text-rose-400 disabled:opacity-40"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-text-secondary transition-all hover:border-rose-500/40 hover:bg-rose-500/15 hover:text-rose-400 disabled:opacity-40"
                   >
-                    <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+                    <Trash2 className="h-3.5 w-3.5" strokeWidth={2.2} />
                   </button>
                 </div>
               </div>

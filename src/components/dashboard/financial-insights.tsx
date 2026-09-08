@@ -102,51 +102,51 @@ export function FinancialInsights({ summary, categorias, orcamentos }: Financial
   }
 
   return (
-    <div className="glass-card-3d rounded-2xl p-4 md:p-5 relative overflow-hidden">
-      <div className="mb-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+    <div className="glass-card-3d rounded-2xl p-5 border-white/[0.08] relative overflow-hidden">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
             <Sparkles className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="font-display text-sm font-semibold text-text-primary md:text-base">
-              Insights financeiros
+            <h3 className="font-display text-sm font-bold text-text-primary md:text-base tracking-tight">
+              Diagnósticos & Insights Inteligentes
             </h3>
-            <p className="text-[11px] text-text-muted">
-              Diagnósticos gerados a partir do seu comportamento de gastos e saldo real
+            <p className="text-xs text-text-secondary">
+              Análise em tempo real do seu comportamento financeiro e projeção de liquidez
             </p>
           </div>
         </div>
       </div>
 
       {insights.length === 0 ? (
-        <div className="flex items-center gap-3 rounded-lg border border-dashed border-border bg-paper/50 p-3.5 text-xs text-text-muted">
-          <HelpCircle className="h-4 w-4 shrink-0 text-text-muted" />
+        <div className="flex items-center gap-3 rounded-xl border border-dashed border-white/10 bg-black/20 p-4 text-xs text-text-secondary">
+          <HelpCircle className="h-4 w-4 shrink-0 text-emerald-400" />
           <span>
-            Você ainda não possui movimentações suficientes para gerar diagnósticos estatísticos este mês. Continue registrando suas despesas e receitas.
+            Você ainda não possui movimentações suficientes para gerar diagnósticos estatísticos este mês. Continue registrando suas despesas e receitas para liberar análises preditivas.
           </span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
           {insights.map((item) => (
             <div
               key={item.id}
-              className={`flex flex-col justify-between rounded-lg border p-3.5 text-xs transition-colors ${
+              className={`flex flex-col justify-between rounded-xl border p-4 text-xs transition-all ${
                 item.type === "positive"
-                  ? "border-emerald-500/20 bg-emerald-500/[0.04] text-text-primary"
+                  ? "border-emerald-500/30 bg-emerald-500/[0.06] text-text-primary hover:border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.05)]"
                   : item.type === "warning"
-                  ? "border-amber-500/20 bg-amber-500/[0.04] text-text-primary"
-                  : "border-border bg-paper/60 text-text-primary"
+                  ? "border-amber-500/30 bg-amber-500/[0.06] text-text-primary hover:border-amber-500/50"
+                  : "border-white/[0.08] bg-black/30 text-text-primary hover:border-sky-500/30"
               }`}
             >
               <div>
-                <div className="flex items-center gap-1.5 font-semibold text-text-primary mb-1">
-                  {item.type === "positive" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
-                  {item.type === "warning" && <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
-                  {item.type === "info" && <TrendingUp className="h-3.5 w-3.5 text-sky-500 shrink-0" />}
-                  <span>{item.title}</span>
+                <div className="flex items-center gap-2 font-semibold text-text-primary mb-1.5">
+                  {item.type === "positive" && <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]" />}
+                  {item.type === "warning" && <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />}
+                  {item.type === "info" && <TrendingUp className="h-4 w-4 text-sky-400 shrink-0" />}
+                  <span className="text-xs font-bold tracking-tight">{item.title}</span>
                 </div>
-                <p className="text-text-muted leading-relaxed">{item.description}</p>
+                <p className="text-text-secondary text-xs leading-relaxed">{item.description}</p>
               </div>
             </div>
           ))}

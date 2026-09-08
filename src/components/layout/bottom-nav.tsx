@@ -15,7 +15,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Navegação principal"
-      className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center justify-around border-t border-border bg-paper-raised px-2 pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center justify-around border-t border-white/[0.08] bg-[#070b09]/95 backdrop-blur-xl px-2 pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {left.map((item) => (
         <NavLink key={item.href} item={item} active={pathname === item.href} />
@@ -24,9 +24,9 @@ export function BottomNav() {
       <button
         onClick={open}
         aria-label="Adicionar transação"
-        className="relative -mt-8 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-paper-raised shadow-lg shadow-brand/30 transition-transform active:scale-95"
+        className="relative -mt-7 flex h-13 w-13 items-center justify-center rounded-full bg-emerald-400 text-black font-bold shadow-[0_0_20px_rgba(52,211,153,0.5)] transition-transform active:scale-95"
       >
-        <Plus className="h-6 w-6" strokeWidth={2.5} />
+        <Plus className="h-6 w-6" strokeWidth={2.8} />
       </button>
 
       {right.map((item) => (
@@ -49,8 +49,8 @@ function NavLink({
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex flex-1 flex-col items-center gap-1 py-1 text-[11px]",
-        active ? "text-brand" : "text-text-muted"
+        "flex flex-1 flex-col items-center gap-1 py-1 text-[11px] font-medium transition-colors",
+        active ? "text-emerald-400 font-semibold drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]" : "text-slate-400 hover:text-white"
       )}
     >
       <Icon className="h-5 w-5" strokeWidth={2} />

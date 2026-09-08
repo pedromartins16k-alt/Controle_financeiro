@@ -10,7 +10,7 @@ export function RecentTransactions({ data }: { data: TransactionRow[] }) {
 
   if (data.length === 0) {
     return (
-      <Card className="p-4 md:p-6">
+      <Card className="p-4 md:p-6 border-border/80 bg-paper-raised">
         <CardHeader className="mb-2">
           <CardTitle className="text-sm font-semibold text-text-primary md:text-base">
             Transações recentes
@@ -34,7 +34,7 @@ export function RecentTransactions({ data }: { data: TransactionRow[] }) {
   }
 
   return (
-    <Card className="p-4 md:p-6">
+    <Card className="p-4 md:p-6 border-border/80 bg-paper-raised">
       <CardHeader className="mb-3 flex items-center justify-between">
         <div>
           <CardTitle className="text-sm font-semibold text-text-primary md:text-base">
@@ -66,23 +66,23 @@ export function RecentTransactions({ data }: { data: TransactionRow[] }) {
           return (
             <div
               key={t.id}
-              className="group flex items-center justify-between rounded-xl bg-paper/70 border border-border p-3 hover:bg-paper hover:border-border-strong transition-all shadow-xs"
+              className="group flex items-center justify-between rounded-xl bg-black/25 border border-white/[0.06] p-3 hover:bg-white/[0.04] hover:border-emerald-500/30 transition-all shadow-xs"
             >
               <div className="min-w-0 pr-3">
-                <p className="truncate text-sm font-semibold text-text-primary group-hover:text-brand transition-colors">
+                <p className="truncate text-sm font-semibold text-text-primary group-hover:text-emerald-400 transition-colors">
                   {t.descricao}
                 </p>
-                <p className="truncate text-[11px] text-text-muted mt-0.5">
-                  {t.categoria} · {t.conta} · {formatDate(t.data)}
+                <p className="truncate text-xs text-text-secondary mt-0.5">
+                  <span className="font-medium text-text-primary/90">{t.categoria}</span> · {t.conta} · {formatDate(t.data)}
                 </p>
               </div>
               <span
                 className={`shrink-0 text-sm font-bold tabular-data ${
                   isExpense
-                    ? "text-rose-600 dark:text-rose-400"
+                    ? "text-rose-400"
                     : t.tipo === "transferencia"
-                    ? "text-sky-600 dark:text-sky-400"
-                    : "text-emerald-600 dark:text-emerald-400"
+                    ? "text-sky-400"
+                    : "text-emerald-400"
                 }`}
               >
                 {sign} {formatCurrency(t.valor)}

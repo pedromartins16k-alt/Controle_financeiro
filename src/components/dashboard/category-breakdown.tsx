@@ -12,7 +12,7 @@ export function CategoryBreakdown({ data }: { data: CategoriaGasto[] }) {
 
   if (data.length === 0 || total === 0) {
     return (
-      <Card className="p-4 md:p-6">
+      <Card className="p-4 md:p-6 border-border/80 bg-paper-raised">
         <CardHeader className="mb-2">
           <CardTitle className="text-sm font-semibold text-text-primary md:text-base">
             Gastos por categoria
@@ -32,7 +32,7 @@ export function CategoryBreakdown({ data }: { data: CategoriaGasto[] }) {
   }
 
   return (
-    <Card className="p-4 md:p-6">
+    <Card className="p-4 md:p-6 border-border/80 bg-paper-raised">
       <CardHeader className="mb-3">
         <CardTitle className="text-sm font-semibold text-text-primary md:text-base">
           Maiores gastos por categoria
@@ -81,24 +81,24 @@ export function CategoryBreakdown({ data }: { data: CategoriaGasto[] }) {
         </div>
       </div>
 
-      <ul className="mt-3 space-y-1.5 divide-y divide-border/40">
+      <ul className="mt-3.5 space-y-2 divide-y divide-white/[0.06]">
         {data.slice(0, 5).map((entry, index) => {
           const pct = total > 0 ? (entry.valor / total) * 100 : 0;
           const cor = entry.cor || DEFAULT_COLORS[index % DEFAULT_COLORS.length];
           return (
             <li
               key={entry.categoria}
-              className="flex items-center justify-between text-xs pt-1.5 first:pt-0"
+              className="flex items-center justify-between text-xs pt-2 first:pt-0"
             >
               <span className="flex items-center gap-2 text-text-secondary min-w-0">
                 <span
-                  className="h-2.5 w-2.5 rounded-full shrink-0"
+                  className="h-2.5 w-2.5 rounded-full shrink-0 shadow-xs"
                   style={{ backgroundColor: cor }}
                 />
-                <span className="font-medium truncate text-text-primary">{entry.categoria}</span>
-                <span className="text-[10px] text-text-muted">({pct.toFixed(0)}%)</span>
+                <span className="font-semibold truncate text-text-primary">{entry.categoria}</span>
+                <span className="text-xs text-text-muted">({pct.toFixed(0)}%)</span>
               </span>
-              <span className="tabular-data font-semibold text-text-primary shrink-0 pl-2">
+              <span className="tabular-data font-bold text-text-primary shrink-0 pl-2">
                 {formatCurrency(entry.valor)}
               </span>
             </li>
