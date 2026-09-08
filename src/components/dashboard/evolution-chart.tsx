@@ -37,7 +37,7 @@ export function EvolutionChart({ data = [], dataByPeriod }: EvolutionChartProps)
   const xAxisInterval = period === "30D" ? 4 : 0;
 
   return (
-    <Card className="col-span-1 p-4 xl:col-span-2 md:p-6 border-border/80 bg-paper-raised">
+    <Card className="col-span-1 p-4 xl:col-span-2 md:p-6">
       <CardHeader className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle className="text-sm font-semibold text-text-primary md:text-base">

@@ -10,7 +10,7 @@ export function RecentTransactions({ data }: { data: TransactionRow[] }) {
 
   if (data.length === 0) {
     return (
-      <Card className="p-4 md:p-6 border-border/80 bg-paper-raised">
+      <Card className="p-4 md:p-6">
         <CardHeader className="mb-2">
           <CardTitle className="text-sm font-semibold text-text-primary md:text-base">
             Transações recentes
@@ -34,7 +34,7 @@ export function RecentTransactions({ data }: { data: TransactionRow[] }) {
   }
 
   return (
-    <Card className="p-4 md:p-6 border-border/80 bg-paper-raised">
+    <Card className="p-4 md:p-6">
       <CardHeader className="mb-3 flex items-center justify-between">
         <div>
           <CardTitle className="text-sm font-semibold text-text-primary md:text-base">

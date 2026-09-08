@@ -59,7 +59,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
       {/* 1. Bloco de Saldo: Atual, Comprometido e Disponível */}
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         {/* Saldo Atual */}
-        <Card className="p-4 md:p-5 border-border/80 bg-paper-raised">
+        <Card className="p-4 md:p-5">
           <CardHeader className="mb-2 flex items-center justify-between">
             <CardTitle className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
               Saldo em contas
@@ -85,7 +85,7 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
         </Card>
 
         {/* Saldo Comprometido */}
-        <Card className="p-4 md:p-5 border-border/80 bg-paper-raised">
+        <Card className="p-4 md:p-5">
           <CardHeader className="mb-2 flex items-center justify-between">
             <CardTitle className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
               Saldo comprometido
@@ -108,9 +108,9 @@ export function SummaryCards({ data }: { data: DashboardSummary }) {
         </Card>
 
         {/* Saldo Livre Real */}
-        <Card className="p-4 md:p-5 border-emerald-500/20 bg-emerald-500/[0.03] dark:bg-emerald-950/20">
+        <Card className="p-4 md:p-5 border-emerald-500/30 bg-emerald-950/25">
           <CardHeader className="mb-2 flex items-center justify-between">
-            <CardTitle className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+            <CardTitle className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
               Saldo livre real
             </CardTitle>
             <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">

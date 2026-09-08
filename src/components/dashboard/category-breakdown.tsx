@@ -12,7 +12,7 @@ export function CategoryBreakdown({ data }: { data: CategoriaGasto[] }) {
 
   if (data.length === 0 || total === 0) {
     return (
-      <Card className="p-4 md:p-6 border-border/80 bg-paper-raised">
+      <Card className="p-4 md:p-6">
         <CardHeader className="mb-2">
           <CardTitle className="text-sm font-semibold text-text-primary md:text-base">
             Gastos por categoria
@@ -32,7 +32,7 @@ export function CategoryBreakdown({ data }: { data: CategoriaGasto[] }) {
   }
 
   return (
-    <Card className="p-4 md:p-6 border-border/80 bg-paper-raised">
+    <Card className="p-4 md:p-6">
       <CardHeader className="mb-3">
         <CardTitle className="text-sm font-semibold text-text-primary md:text-base">
           Maiores gastos por categoria

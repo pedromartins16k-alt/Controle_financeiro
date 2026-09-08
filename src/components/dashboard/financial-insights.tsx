@@ -102,7 +102,7 @@ export function FinancialInsights({ summary, categorias, orcamentos }: Financial
   }
 
   return (
-    <div className="rounded-xl border border-border/80 bg-paper-raised p-4 md:p-5 shadow-xs">
+    <div className="glass-card-3d rounded-2xl p-4 md:p-5 relative overflow-hidden">
       <div className="mb-3.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">

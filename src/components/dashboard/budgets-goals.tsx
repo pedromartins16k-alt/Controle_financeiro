@@ -5,7 +5,7 @@ import type { OrcamentoRow, MetaRow } from "@/lib/types";
 
 export function BudgetsPreview({ data }: { data: OrcamentoRow[] }) {
   return (
-    <Card className="p-4 md:p-6 border-border/80 bg-paper-raised">
+    <Card className="p-4 md:p-6">
       <CardHeader className="mb-3 flex items-center justify-between">
         <div>
           <CardTitle className="text-sm font-semibold text-text-primary md:text-base">
@@ -60,7 +60,7 @@ export function BudgetsPreview({ data }: { data: OrcamentoRow[] }) {
 
 export function GoalsPreview({ data }: { data: MetaRow[] }) {
   return (
-    <Card className="p-4 md:p-6 border-border/80 bg-paper-raised">
+    <Card className="p-4 md:p-6">
       <CardHeader className="mb-3 flex items-center justify-between">
         <div>
           <CardTitle className="text-sm font-semibold text-text-primary md:text-base">

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useRef } from "react";
 
@@ -50,19 +50,19 @@ export function AmbientMeshCanvas() {
       time += 0.01;
       ctx.clearRect(0, 0, width, height);
 
-      // Linhas de Ondas Luminosas Verdes
-      const waveCount = 3;
+      // Linhas de Ondas Luminosas Verdes (Cyber-Emerald Ambient Waves)
+      const waveCount = 5;
       for (let w = 0; w < waveCount; w++) {
         ctx.beginPath();
-        const baseAlpha = w === 0 ? 0.16 : w === 1 ? 0.09 : 0.04;
+        const baseAlpha = [0.45, 0.35, 0.25, 0.18, 0.12][w];
         ctx.strokeStyle = `rgba(16, 185, 129, ${baseAlpha})`;
-        ctx.lineWidth = w === 0 ? 2 : 1;
+        ctx.lineWidth = w === 0 ? 2.5 : w === 1 ? 2 : 1.5;
 
-        const yOffset = height * 0.45 + w * 45;
+        const yOffset = height * 0.40 + w * 40;
 
-        for (let x = 0; x <= width; x += 20) {
-          const wave1 = Math.sin(x * 0.003 + time + w) * 55;
-          const wave2 = Math.cos(x * 0.002 - time * 0.7) * 30;
+        for (let x = 0; x <= width; x += 15) {
+          const wave1 = Math.sin(x * 0.0025 + time * 1.2 + w * 0.8) * 65;
+          const wave2 = Math.cos(x * 0.0018 - time * 0.8 + w) * 35;
           const y = yOffset + wave1 + wave2;
 
           if (x === 0) {
@@ -71,7 +71,10 @@ export function AmbientMeshCanvas() {
             ctx.lineTo(x, y);
           }
         }
+        ctx.shadowBlur = w < 2 ? 14 : 6;
+        ctx.shadowColor = "rgba(16, 185, 129, 0.6)";
         ctx.stroke();
+        ctx.shadowBlur = 0;
       }
 
       // Partículas com brilho
@@ -85,10 +88,10 @@ export function AmbientMeshCanvas() {
         if (p.y > height) p.y = 0;
 
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(52, 211, 153, ${p.alpha})`;
-        ctx.shadowBlur = 6;
-        ctx.shadowColor = "rgba(16, 185, 129, 0.5)";
+        ctx.arc(p.x, p.y, p.radius * 1.3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(52, 211, 153, ${Math.min(1, p.alpha * 1.5)})`;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "rgba(16, 185, 129, 0.8)";
         ctx.fill();
         ctx.shadowBlur = 0;
       });
@@ -107,7 +110,7 @@ export function AmbientMeshCanvas() {
   return (
     <canvas
       ref={canvasRef}
-      className="pointer-events-none fixed inset-0 z-0 h-full w-full opacity-60 dark:opacity-80 transition-opacity"
+      className="pointer-events-none fixed inset-0 z-0 h-full w-full opacity-90 dark:opacity-95 transition-opacity"
       aria-hidden="true"
     />
   );
