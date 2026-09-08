@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { TransactionsFilters } from "@/components/transactions/transactions-filters";
 import { TransactionsList } from "@/components/transactions/transactions-list";
 import { NewTransactionButton } from "@/components/transactions/new-transaction-button";
+import { formatCurrency } from "@/lib/utils";
 import type { TransactionRow } from "@/lib/types";
 
 interface TransacoesPageProps {
