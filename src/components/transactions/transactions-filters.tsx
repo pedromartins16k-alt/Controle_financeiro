@@ -67,28 +67,30 @@ export function TransactionsFilters({
     <div className="space-y-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Tabs de Tipos Rápidos */}
-        <div className="flex gap-1 overflow-x-auto rounded-full bg-paper-raised p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {TABS.map((tab) => {
-            const params = new URLSearchParams(searchParams.toString());
-            if (tab.value) {
-              params.set("tipo", tab.value);
-            } else {
-              params.delete("tipo");
-            }
-            return (
-              <a
-                key={tab.value}
-                href={`/transacoes?${params.toString()}`}
-                className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-                  tipo === tab.value
-                    ? "bg-brand text-paper-raised"
-                    : "text-text-secondary hover:text-text-primary"
-                }`}
-              >
-                {tab.label}
-              </a>
-            );
-          })}
+        <div className="relative -mx-1 px-1 sm:mx-0 sm:px-0">
+          <div className="flex gap-1 overflow-x-auto rounded-full bg-paper-raised p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-pan-x overscroll-x-contain">
+            {TABS.map((tab) => {
+              const params = new URLSearchParams(searchParams.toString());
+              if (tab.value) {
+                params.set("tipo", tab.value);
+              } else {
+                params.delete("tipo");
+              }
+              return (
+                <a
+                  key={tab.value}
+                  href={`/transacoes?${params.toString()}`}
+                  className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-colors select-none ${
+                    tipo === tab.value
+                      ? "bg-brand text-paper-raised shadow-xs font-semibold"
+                      : "text-text-secondary hover:text-text-primary"
+                  }`}
+                >
+                  {tab.label}
+                </a>
+              );
+            })}
+          </div>
         </div>
 
         {/* Campo de Busca + Botão Filtros Avançados */}

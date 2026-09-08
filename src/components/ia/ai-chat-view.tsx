@@ -212,16 +212,17 @@ export function AiChatView({ userName }: { userName: string }) {
       {/* Coluna Direita / Principal: Área do Chat */}
       <Card className="lg:col-span-3 flex flex-col h-full overflow-hidden border-border-strong bg-paper shadow-md">
         {/* Header do Chat */}
-        <div className="flex items-center justify-between border-b border-border bg-paper-raised/40 px-5 py-3.5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-paper-raised">
-              <Bot className="h-5 w-5" />
+        <div className="flex items-center justify-between border-b border-border bg-paper-raised/40 px-3.5 sm:px-5 py-3 sm:py-3.5">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-brand text-paper-raised shrink-0">
+              <Bot className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
-            <div>
-              <h2 className="font-display text-sm font-semibold text-text-primary">
-                Assistente Financeiro IA
+            <div className="min-w-0">
+              <h2 className="font-display text-xs sm:text-sm font-semibold text-text-primary truncate">
+                <span className="inline sm:hidden">Assistente IA</span>
+                <span className="hidden sm:inline">Assistente Financeiro IA</span>
               </h2>
-              <p className="text-[11px] text-text-muted">
+              <p className="text-[10px] sm:text-[11px] text-text-muted truncate">
                 Análise em tempo real dos seus lançamentos
               </p>
             </div>
@@ -231,7 +232,8 @@ export function AiChatView({ userName }: { userName: string }) {
             variant="ghost"
             size="sm"
             onClick={handleResetChat}
-            className="lg:hidden text-xs h-8"
+            aria-label="Limpar histórico da conversa"
+            className="lg:hidden text-xs h-8 px-2.5 text-text-muted hover:text-text-primary shrink-0"
           >
             Limpar
           </Button>
