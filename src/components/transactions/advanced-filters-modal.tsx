@@ -121,7 +121,7 @@ export function AdvancedFiltersModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-border-strong bg-paper shadow-2xl transition-all">
+      <div className="relative w-full max-w-lg max-h-[calc(100dvh-32px)] overflow-hidden rounded-2xl border border-border-strong bg-paper shadow-2xl transition-all flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2">
@@ -139,9 +139,9 @@ export function AdvancedFiltersModal({
         </div>
 
         {/* Content */}
-        <div className="max-h-[75vh] space-y-4 overflow-y-auto p-5 text-sm">
+        <div className="flex-1 space-y-4 overflow-y-auto p-5 text-sm">
           {/* Status & Tipo */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                 Tipo
@@ -179,7 +179,7 @@ export function AdvancedFiltersModal({
             <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
               Intervalo de Datas
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input
                 type="date"
                 value={dataInicio}
@@ -200,7 +200,7 @@ export function AdvancedFiltersModal({
             <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
               Faixa de Valor (R$)
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input
                 type="number"
                 placeholder="Mínimo (ex: 50)"
@@ -238,7 +238,7 @@ export function AdvancedFiltersModal({
           </div>
 
           {/* Conta e Cartão */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
                 Conta Bancária

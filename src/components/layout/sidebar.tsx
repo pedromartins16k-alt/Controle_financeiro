@@ -31,7 +31,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex h-[100dvh] shrink-0 flex-col border-r border-white/[0.08] bg-[#060a08]/90 text-paper backdrop-blur-2xl transition-transform duration-300 ease-in-out md:static md:h-[100dvh] md:z-0 md:translate-x-0",
           mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0",
-          collapsed ? "md:w-[70px]" : "w-64"
+          collapsed ? "md:w-[70px]" : "w-64 max-w-[85vw]"
         )}
       >
         <div className="flex h-14 shrink-0 items-center justify-between px-4">
@@ -68,7 +68,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                 onClick={onMobileClose}
                 title={collapsed && !mobileOpen ? item.label : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs transition-all",
+                  "flex items-center gap-2.5 rounded-xl px-3 py-3 md:py-2.5 text-xs transition-all",
                   active
                     ? "bg-emerald-500/15 font-semibold text-emerald-400 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]"
                     : "text-slate-400 hover:bg-white/[0.05] hover:text-white border border-transparent"

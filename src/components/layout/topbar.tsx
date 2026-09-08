@@ -58,7 +58,7 @@ export function Topbar({ userName, onMenuClick, onSearchClick }: TopbarProps) {
         <button
           onClick={onSearchClick}
           aria-label="Buscar"
-          className="flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-white/[0.06] hover:text-text-primary lg:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-white/[0.06] hover:text-text-primary lg:hidden"
         >
           <Search className="h-4 w-4" />
         </button>

@@ -141,7 +141,7 @@ export function AiChatView({ userName }: { userName: string }) {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-160px)] min-h-[550px]">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100dvh-130px)] sm:h-[calc(100dvh-160px)] min-h-0">
       {/* Coluna Esquerda: Cards de Insights Rápidos */}
       <div className="hidden lg:flex flex-col gap-4">
         <Card className="p-4 bg-brand/5 border-brand/20">
@@ -245,7 +245,7 @@ export function AiChatView({ userName }: { userName: string }) {
                           key={sug}
                           onClick={() => handleSend(sug)}
                           disabled={loading}
-                          className="rounded-full border border-border-strong bg-paper px-3 py-1 text-[11px] font-medium text-text-secondary hover:border-brand hover:text-brand transition-colors"
+                          className="rounded-full border border-border-strong bg-paper px-3 py-1 text-[11px] font-medium text-text-secondary hover:border-brand hover:text-brand transition-colors whitespace-normal text-left"
                         >
                           {sug}
                         </button>

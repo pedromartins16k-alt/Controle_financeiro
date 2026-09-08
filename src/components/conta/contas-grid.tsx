@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
@@ -108,7 +108,7 @@ export function AccountsGrid({ data }: { data: AccountRow[] }) {
                   {formatCurrency(a.saldoAtual)}
                 </p>
 
-                <div className="mt-4 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                <div className="mt-4 flex items-center gap-2 opacity-70 sm:opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                   <button
                     onClick={() => setModalMode(a)}
                     className="flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-text-secondary transition-colors hover:bg-paper hover:text-text-primary"

@@ -67,7 +67,7 @@ export function TransactionsFilters({
     <div className="space-y-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Tabs de Tipos Rápidos */}
-        <div className="flex gap-1 overflow-x-auto rounded-full bg-paper-raised p-1 sm:overflow-visible">
+        <div className="flex gap-1 overflow-x-auto rounded-full bg-paper-raised p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {TABS.map((tab) => {
             const params = new URLSearchParams(searchParams.toString());
             if (tab.value) {

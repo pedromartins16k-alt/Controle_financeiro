@@ -251,7 +251,7 @@ export function TransactionModal() {
         aria-modal="true"
         aria-labelledby="nova-transacao-titulo"
         onClick={(e) => e.stopPropagation()}
-        className="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-paper-raised p-6 shadow-2xl sm:rounded-2xl border border-border"
+        className="relative max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-paper-raised p-6 shadow-2xl sm:rounded-2xl border border-border"
       >
         {/* Banner de Feedback de Sucesso */}
         {showSuccessToast && (
@@ -454,7 +454,7 @@ export function TransactionModal() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {tipo === "transferencia" ? (
               <>
                 <div>
@@ -607,7 +607,7 @@ export function TransactionModal() {
                     </label>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {tipoRepeticao === "parcelada" ? (
                       <div>
                         <label htmlFor="parcelas" className="mb-1.5 block text-xs font-semibold text-text-primary uppercase tracking-wider">

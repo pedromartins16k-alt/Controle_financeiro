@@ -96,11 +96,11 @@ export function TransactionsList({ data }: { data: TransactionRow[] }) {
           return (
             <li
               key={t.id}
-              className={`group relative flex items-center justify-between border-l-3 px-4 py-3.5 transition-colors hover:bg-paper/50 ${TONE_BORDER[tone]}`}
+              className={`group relative flex flex-col gap-1 border-l-3 px-4 py-3 transition-colors hover:bg-paper/50 sm:flex-row sm:items-center sm:justify-between sm:py-3.5 ${TONE_BORDER[tone]}`}
             >
-              <div className="min-w-0 pr-3">
-                <p className="flex items-center gap-2 truncate text-sm font-semibold text-text-primary">
-                  {t.descricao}
+              <div className="min-w-0">
+                <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-text-primary">
+                  <span className="truncate max-w-[200px] sm:max-w-none">{t.descricao}</span>
                   {t.is_recorrente && (
                     <span className="inline-flex items-center gap-1 rounded-md border border-brand/30 bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand-strong dark:text-brand">
                       <span>↻</span>
@@ -130,7 +130,7 @@ export function TransactionsList({ data }: { data: TransactionRow[] }) {
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2 pl-2">
+              <div className="flex shrink-0 items-center gap-2 sm:pl-2">
                 <span
                   className={`text-sm font-bold tabular-data ${
                     isExpense
@@ -143,7 +143,7 @@ export function TransactionsList({ data }: { data: TransactionRow[] }) {
                   {sign} {formatCurrency(t.valor)}
                 </span>
 
-                {/* Botões de Ação Diretos (Desktop) & Menu Dropdown (Mobile) */}
+                {/* Botões de Ação */}
                 <div className="flex items-center gap-1">
                   {/* Botão Editar */}
                   <button

@@ -61,7 +61,7 @@ export function GoalModal({ isOpen, onClose, editingGoal }: GoalModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-      <div className="relative w-full max-w-lg rounded-2xl border border-border bg-surface p-6 shadow-2xl">
+      <div className="relative w-full max-w-lg max-h-[calc(100dvh-32px)] overflow-y-auto rounded-2xl border border-border bg-surface p-6 shadow-2xl">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 text-text-muted hover:text-text-primary"

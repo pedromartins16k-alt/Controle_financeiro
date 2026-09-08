@@ -124,7 +124,7 @@ export function AccountModal({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label htmlFor="tipo" className="mb-1.5 block text-sm font-medium text-text-primary">
                 Tipo
