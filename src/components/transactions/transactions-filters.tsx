@@ -65,6 +65,17 @@ export function TransactionsFilters({
     router.push(`/transacoes?${params.toString()}`);
   };
 
+  const DEBOUNCE_DELAY_MS = 400;
+
+  // Limpa o timer de debounce ao desmontar o componente
+  React.useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
   // Sincroniza estado local caso a URL mude externamente
   React.useEffect(() => {
     setSearchTerm(q);
@@ -82,7 +93,18 @@ export function TransactionsFilters({
       } else {
         params.delete("q");
       }
-      router.push(`/transacoes?${params.toString()}`);
+      const queryString = params.toString();
+      const targetUrl = queryString ? `/transacoes?${queryString}` : "/transacoes";
+
+      // Atualiza imediatamente o parâmetro ?q= na URL dentro do intervalo de debounce
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", targetUrl);
+      }
+
+      // Atualiza os dados via Next.js sem poluir o histórico nem saltar scroll
+      React.startTransition(() => {
+        router.replace(targetUrl, { scroll: false });
+      });
     },
     [router, searchParams]
   );
@@ -97,17 +119,23 @@ export function TransactionsFilters({
 
     debounceTimerRef.current = setTimeout(() => {
       applySearch(value);
-    }, 400);
+    }, DEBOUNCE_DELAY_MS);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
       applySearch(searchTerm);
     }
   };
 
   const handleClearSearch = () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
     setSearchTerm("");
     applySearch("");
   };
